@@ -7,6 +7,8 @@ import RegisterScreen from "../screens/Auth/RegisterScreen";
 import VerifyOtpScreen from "../screens/Auth/VerifyOtpScreen";
 import HomeScreen from "../screens/Home/HomeScreen";
 import ProfileScreen from "../screens/Profile/ProfileScreen";
+import ClassesScreen from "../screens/Classes/ClassesScreen";
+import ClassDetailScreen from "../screens/Classes/ClassDetailScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -42,6 +44,19 @@ export default function AppNavigator() {
         name="Profile"
         component={ProfileScreen}
         options={{ title: "Mi Perfil" }}
+      />
+      <Stack.Screen
+        name="Classes"
+        component={ClassesScreen}
+        options={{ headerShown: false }} // header personalizado
+      />
+      <Stack.Screen
+        name="ClassDetail"
+        component={ClassDetailScreen}
+        options={{ 
+          headerShown: false, // header personalizado
+          presentation: 'modal' // animación modal
+        }}
       />
     </Stack.Navigator>
   );
