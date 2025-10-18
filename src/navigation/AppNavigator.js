@@ -6,6 +6,7 @@ import ForgotPasswordScreen from "../screens/Auth/ForgotPasswordScreen";
 import RegisterScreen from "../screens/Auth/RegisterScreen";
 import VerifyOtpScreen from "../screens/Auth/VerifyOtpScreen";
 import HomeScreen from "../screens/Home/HomeScreen";
+import ProfileScreen from "../screens/Profile/ProfileScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -37,7 +38,11 @@ export default function AppNavigator() {
         component={HomeScreen}
         options={{ headerShown: false }} // sin barra superior
       />
-
+      <Stack.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ title: "Mi Perfil" }}
+      />
     </Stack.Navigator>
   );
 }
