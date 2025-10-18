@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Modal } from 'react-native';
+import { createReservation } from '../../services/reservations';
 import {
   View,
   Text,
@@ -67,10 +69,31 @@ const ClassDetailScreen = ({ route, navigation }) => {
     }
   };
 
-  const handleReserve = () => {
-    // TODO: Implementar reserva (punto 5)
-    Alert.alert('Próximamente', 'Función de reserva próximamente disponible');
-  };
+const [showModal, setShowModal] = useState(false);
+const [reserving, setReserving] = useState(false);
+
+const handleReserve = () => {
+  if (classData.cupo <= 0) {
+    Alert.alert('Sin cupo disponible', 'No se puede reservar esta clase.');
+    return;
+  }
+  setShowModal(true);
+};
+
+const confirmReservation = async () => {
+  try {
+    setReserving(true);
+    const result = await createReservation(classData.id);
+    Alert.alert('✅ Reserva confirmada', 'Tu reserva fue creada exitosamente.');
+    setClassData({ ...classData, cupo: result.cupo_restante });
+  } catch (error) {
+    Alert.alert('Error', error.error || 'No se pudo crear la reserva.');
+  } finally {
+    setReserving(false);
+    setShowModal(false);
+  }
+};
+
 
   const handleShowLocation = () => {
     // TODO: Implementar "Cómo llegar" (punto 7)
@@ -103,6 +126,7 @@ const ClassDetailScreen = ({ route, navigation }) => {
   const disciplineColor = getDisciplineColor(classData.discipline);
 
   return (
+    
     <ScrollView style={styles.container}>
       {/* Header con degradado */}
       <View style={[styles.header, { backgroundColor: disciplineColor }]}>
@@ -226,7 +250,71 @@ const ClassDetailScreen = ({ route, navigation }) => {
           <Text style={styles.backToListButtonText}>Volver al Catálogo</Text>
         </TouchableOpacity>
       </View>
+            <Modal
+        visible={showModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowModal(false)}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          <View style={{
+            backgroundColor: '#fff',
+            borderRadius: 12,
+            padding: 25,
+            width: '85%',
+            alignItems: 'center'
+          }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
+              Cupo disponible
+            </Text>
+            <Text style={{ fontSize: 15, color: '#555', marginBottom: 20 }}>
+              ¿Deseas confirmar tu reserva?
+            </Text>
+            <Text style={{ fontSize: 14, color: '#777', marginBottom: 20 }}>
+              {formatDate(classData.fecha)} – {formatTime(classData.hora)}
+            </Text>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  backgroundColor: '#4CAF50',
+                  padding: 10,
+                  borderRadius: 8,
+                  marginRight: 10,
+                  alignItems: 'center'
+                }}
+                onPress={confirmReservation}
+                disabled={reserving}
+              >
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>
+                  {reserving ? 'Reservando...' : 'Aceptar'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  backgroundColor: '#ccc',
+                  padding: 10,
+                  borderRadius: 8,
+                  alignItems: 'center'
+                }}
+                onPress={() => setShowModal(false)}
+              >
+                <Text style={{ color: '#333', fontWeight: 'bold' }}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
+    
   );
 };
 
