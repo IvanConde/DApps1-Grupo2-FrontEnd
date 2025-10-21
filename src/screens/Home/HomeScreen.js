@@ -56,6 +56,10 @@ export default function HomeScreen({ navigation }) {
     return timeString.substring(0, 5);
   };
 
+  const handleGoToMyReservations = () => {
+  navigation.navigate('MyReservations');
+  };
+
   const getDisciplineIcon = (discipline) => {
     switch (discipline?.toLowerCase()) {
       case 'funcional': return '💪';
@@ -168,6 +172,17 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.actionInfo}>
             <Text style={styles.actionTitle}>Mi Historial</Text>
             <Text style={styles.actionSubtitle}>Revisa tus clases pasadas</Text>
+          </View>
+          <Text style={styles.actionArrow}>›</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionCard}
+          onPress={handleGoToMyReservations}
+        >
+          <Text style={styles.actionIcon}>🧾</Text>
+          <View style={styles.actionInfo}>
+            <Text style={styles.actionTitle}>Mis reservas</Text>
+            <Text style={styles.actionSubtitle}>Consultá y cancelá tus turnos</Text>
           </View>
           <Text style={styles.actionArrow}>›</Text>
         </TouchableOpacity>

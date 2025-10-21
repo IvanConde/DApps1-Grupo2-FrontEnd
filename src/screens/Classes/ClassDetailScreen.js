@@ -14,7 +14,7 @@ import {
 import { getClassById } from '../../services/classes';
 
 const ClassDetailScreen = ({ route, navigation }) => {
-  const { classId } = route.params;
+  const { classId, fromMyReservations } = route.params || {};
   const [classData, setClassData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -228,9 +228,11 @@ const confirmReservation = async () => {
         </View>
       </View>
 
-      {/* Botones de acción */}
-      <View style={styles.actionButtons}>
-        {classData.cupo > 0 ? (
+          {/* Botones de acción */}
+          <View style={styles.actionButtons}>
+      {/* ✅ Mostrar botón solo si NO venís desde Mis Reservas */}
+      {!fromMyReservations && (
+        classData.cupo > 0 ? (
           <TouchableOpacity
             style={[styles.reserveButton, { backgroundColor: disciplineColor }]}
             onPress={handleReserve}
@@ -241,78 +243,81 @@ const confirmReservation = async () => {
           <View style={styles.fullButton}>
             <Text style={styles.fullButtonText}>Clase Completa</Text>
           </View>
-        )}
+        )
+      )}
 
-        <TouchableOpacity
-          style={styles.backToListButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backToListButtonText}>Volver al Catálogo</Text>
-        </TouchableOpacity>
-      </View>
-            <Modal
-        visible={showModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowModal(false)}
+      <TouchableOpacity
+        style={styles.backToListButton}
+        onPress={() => navigation.goBack()}
       >
+        <Text style={styles.backToListButtonText}>
+          {fromMyReservations ? 'Volver a Mis Reservas' : 'Volver al Catálogo'}
+        </Text>
+      </TouchableOpacity>
+    </View>
+          <Modal
+      visible={showModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowModal(false)}
+    >
+      <View style={{
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
         <View style={{
-          flex: 1,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          justifyContent: 'center',
+          backgroundColor: '#fff',
+          borderRadius: 12,
+          padding: 25,
+          width: '85%',
           alignItems: 'center'
         }}>
-          <View style={{
-            backgroundColor: '#fff',
-            borderRadius: 12,
-            padding: 25,
-            width: '85%',
-            alignItems: 'center'
-          }}>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
-              Cupo disponible
-            </Text>
-            <Text style={{ fontSize: 15, color: '#555', marginBottom: 20 }}>
-              ¿Deseas confirmar tu reserva?
-            </Text>
-            <Text style={{ fontSize: 14, color: '#777', marginBottom: 20 }}>
-              {formatDate(classData.fecha)} – {formatTime(classData.hora)}
-            </Text>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
+            Cupo disponible
+          </Text>
+          <Text style={{ fontSize: 15, color: '#555', marginBottom: 20 }}>
+            ¿Deseas confirmar tu reserva?
+          </Text>
+          <Text style={{ fontSize: 14, color: '#777', marginBottom: 20 }}>
+            {formatDate(classData.fecha)} – {formatTime(classData.hora)}
+          </Text>
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
-              <TouchableOpacity
-                style={{
-                  flex: 1,
-                  backgroundColor: '#4CAF50',
-                  padding: 10,
-                  borderRadius: 8,
-                  marginRight: 10,
-                  alignItems: 'center'
-                }}
-                onPress={confirmReservation}
-                disabled={reserving}
-              >
-                <Text style={{ color: '#fff', fontWeight: 'bold' }}>
-                  {reserving ? 'Reservando...' : 'Aceptar'}
-                </Text>
-              </TouchableOpacity>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
+            <TouchableOpacity
+              style={{
+                flex: 1,
+                backgroundColor: '#4CAF50',
+                padding: 10,
+                borderRadius: 8,
+                marginRight: 10,
+                alignItems: 'center'
+              }}
+              onPress={confirmReservation}
+              disabled={reserving}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold' }}>
+                {reserving ? 'Reservando...' : 'Aceptar'}
+              </Text>
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                style={{
-                  flex: 1,
-                  backgroundColor: '#ccc',
-                  padding: 10,
-                  borderRadius: 8,
-                  alignItems: 'center'
-                }}
-                onPress={() => setShowModal(false)}
-              >
-                <Text style={{ color: '#333', fontWeight: 'bold' }}>Cancelar</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={{
+                flex: 1,
+                backgroundColor: '#ccc',
+                padding: 10,
+                borderRadius: 8,
+                alignItems: 'center'
+              }}
+              onPress={() => setShowModal(false)}
+            >
+              <Text style={{ color: '#333', fontWeight: 'bold' }}>Cancelar</Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      </View>
+    </Modal>
     </ScrollView>
     
   );

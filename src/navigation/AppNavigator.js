@@ -9,6 +9,7 @@ import HomeScreen from "../screens/Home/HomeScreen";
 import ProfileScreen from "../screens/Profile/ProfileScreen";
 import ClassesScreen from "../screens/Classes/ClassesScreen";
 import ClassDetailScreen from "../screens/Classes/ClassDetailScreen";
+import ClassUser from '../screens/Classes/ClassUser';
 
 const Stack = createNativeStackNavigator();
 
@@ -57,6 +58,11 @@ export default function AppNavigator() {
           headerShown: false, // header personalizado
           presentation: 'modal' // animación modal
         }}
+      />
+      <Stack.Screen
+        name="MyReservations"
+        component={ClassUser}
+        options={{ title: "Mis reservas" }}
       />
     </Stack.Navigator>
   );
