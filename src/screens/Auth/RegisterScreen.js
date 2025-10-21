@@ -1,6 +1,6 @@
 // src/screens/Auth/RegisterScreen.js
 import React, { useState, useRef } from "react";
-import { View } from "react-native";
+import { View, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
 import { Text, TextInput, Button, HelperText } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { register as registerRequest } from "../../services/auth";
@@ -71,54 +71,250 @@ export default function RegisterScreen({ navigation }) {
     }
   };
 
+  const goToLogin = () => navigation.navigate("Login");
+
   return (
-    <View style={{ flex: 1, padding: 20, justifyContent: "flex-start", gap: 12 }}>
-      <Text variant="headlineMedium" style={{ marginBottom: 8, fontWeight: "600" }}>
-        Crear cuenta en RitmoFit
-      </Text>
+    <ScrollView style={styles.container}>
+      {/* Header con estilo coherente */}
+      <View style={styles.header}>
+        <Text style={styles.headerIcon}>🌟</Text>
+        <Text variant="headlineMedium" style={styles.title}>
+          ¡Únete a RitmoFit!
+        </Text>
+        <Text style={styles.subtitle}>
+          Crea tu cuenta y comienza tu aventura fitness
+        </Text>
+      </View>
 
-      <TextInput label="Nombre" mode="outlined" value={name} onChangeText={setName} />
+      {/* Formulario en card */}
+      <View style={styles.formCard}>
+        <Text style={styles.formTitle}>Crear Cuenta</Text>
+        
+        <View style={styles.inputContainer}>
+          <TextInput
+            label="👤 Nombre completo"
+            mode="outlined"
+            value={name}
+            onChangeText={setName}
+            style={styles.input}
+            outlineColor="#E0E0E0"
+            activeOutlineColor="#4CAF50"
+          />
+        </View>
 
-      <TextInput
-        label="Email"
-        mode="outlined"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
-      {emailInvalid && (
-        <HelperText type="error" visible>Ingresá un email válido.</HelperText>
-      )}
+        <View style={styles.inputContainer}>
+          <TextInput
+            label="📧 Email"
+            mode="outlined"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+            style={styles.input}
+            outlineColor="#E0E0E0"
+            activeOutlineColor="#4CAF50"
+          />
+          {emailInvalid && (
+            <HelperText type="error" visible={emailInvalid} style={styles.helperText}>
+              Ingresá un email válido.
+            </HelperText>
+          )}
+        </View>
 
-      <TextInput
-        label="Contraseña"
-        mode="outlined"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-      {passwordTooShort && (
-        <HelperText type="error" visible>Debe tener al menos 6 caracteres.</HelperText>
-      )}
+        <View style={styles.inputContainer}>
+          <TextInput
+            label="🔒 Contraseña"
+            mode="outlined"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+            style={styles.input}
+            outlineColor="#E0E0E0"
+            activeOutlineColor="#4CAF50"
+          />
+          {passwordTooShort && (
+            <HelperText type="error" visible={passwordTooShort} style={styles.helperText}>
+              Debe tener al menos 6 caracteres.
+            </HelperText>
+          )}
+        </View>
 
-      <TextInput
-        ref={pass2Ref}
-        label="Repetir contraseña"
-        mode="outlined"
-        secureTextEntry
-        value={password2}
-        onChangeText={setPassword2}
-      />
-      {passwordsDontMatch && (
-        <HelperText type="error" visible>Las contraseñas no coinciden.</HelperText>
-      )}
+        <View style={styles.inputContainer}>
+          <TextInput
+            ref={pass2Ref}
+            label="🔐 Confirmar contraseña"
+            mode="outlined"
+            secureTextEntry
+            value={password2}
+            onChangeText={setPassword2}
+            style={styles.input}
+            outlineColor="#E0E0E0"
+            activeOutlineColor="#4CAF50"
+          />
+          {passwordsDontMatch && (
+            <HelperText type="error" visible={passwordsDontMatch} style={styles.helperText}>
+              Las contraseñas no coinciden.
+            </HelperText>
+          )}
+        </View>
 
-      {!!errorMsg && <HelperText type="error" visible>{errorMsg}</HelperText>}
+        {!!errorMsg && (
+          <HelperText type="error" visible style={styles.errorText}>
+            {errorMsg}
+          </HelperText>
+        )}
 
-      <Button mode="contained" onPress={handleRegister} loading={submitting} disabled={submitting}>
-        Registrarse
-      </Button>
-    </View>
+        <Button
+          mode="contained"
+          onPress={handleRegister}
+          loading={submitting}
+          disabled={submitting}
+          style={styles.registerButton}
+          labelStyle={styles.buttonLabel}
+        >
+          ✨ Crear mi cuenta
+        </Button>
+
+        {/* Información adicional */}
+        <View style={styles.infoContainer}>
+          <Text style={styles.infoText}>
+            Al registrarte aceptas nuestros términos de uso y política de privacidad
+          </Text>
+        </View>
+      </View>
+
+      {/* Card de login */}
+      <View style={styles.loginCard}>
+        <Text style={styles.loginTitle}>¿Ya tienes cuenta?</Text>
+        <Text style={styles.loginSubtitle}>
+          Inicia sesión con tu cuenta existente
+        </Text>
+        <TouchableOpacity onPress={goToLogin} style={styles.loginButton}>
+          <Text style={styles.loginButtonText}>🔑 Iniciar sesión</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    backgroundColor: '#4CAF50',
+    paddingTop: 60,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    alignItems: 'center',
+  },
+  headerIcon: {
+    fontSize: 48,
+    marginBottom: 10,
+  },
+  title: {
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 8,
+    fontWeight: 'bold',
+  },
+  subtitle: {
+    color: 'rgba(255,255,255,0.9)',
+    textAlign: 'center',
+    fontSize: 16,
+  },
+  formCard: {
+    backgroundColor: '#fff',
+    margin: 20,
+    marginTop: -20,
+    borderRadius: 20,
+    padding: 25,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  formTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  inputContainer: {
+    marginBottom: 15,
+  },
+  input: {
+    backgroundColor: '#fff',
+  },
+  helperText: {
+    marginTop: 5,
+  },
+  errorText: {
+    textAlign: 'center',
+    marginBottom: 15,
+    fontSize: 14,
+  },
+  registerButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 8,
+    borderRadius: 12,
+    marginTop: 10,
+    marginBottom: 15,
+  },
+  buttonLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  infoContainer: {
+    marginTop: 10,
+  },
+  infoText: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  loginCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 20,
+    padding: 25,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  loginTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  loginSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  loginButton: {
+    backgroundColor: '#E8F5E8',
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  loginButtonText: {
+    color: '#4CAF50',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});

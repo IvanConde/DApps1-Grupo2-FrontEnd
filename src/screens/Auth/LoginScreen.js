@@ -1,6 +1,6 @@
 // src/screens/Auth/LoginScreen.js
 import React, { useRef, useState, useEffect } from "react";
-import { View, TouchableOpacity, Alert } from "react-native";
+import { View, TouchableOpacity, Alert, ScrollView, StyleSheet } from "react-native";
 import { Text, TextInput, Button, HelperText } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as LocalAuthentication from "expo-local-authentication";
@@ -133,81 +133,231 @@ const handleBiometricLogin = async () => {
   const goToRegister = () => navigation.navigate("Register");
 
   return (
-    <View style={{ flex: 1, padding: 20, justifyContent: "flex-start", gap: 12 }}>
-      <Text
-        variant="headlineMedium"
-        style={{ marginBottom: 8, fontWeight: "600" }}
-      >
-        Iniciar sesión en RitmoFit
-      </Text>
+    <ScrollView style={styles.container}>
+      {/* Header con estilo coherente */}
+      <View style={styles.header}>
+        <Text style={styles.headerIcon}>🏃‍♀️</Text>
+        <Text variant="headlineMedium" style={styles.title}>
+          Bienvenido a RitmoFit
+        </Text>
+        <Text style={styles.subtitle}>
+          Tu entrenamiento ideal te está esperando
+        </Text>
+      </View>
 
-      <TextInput
-        label="Email"
-        mode="outlined"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
-      {emailIsInvalid && (
-        <HelperText type="error" visible={emailIsInvalid}>
-          Ingresá un email válido.
-        </HelperText>
-      )}
+      {/* Formulario en card */}
+      <View style={styles.formCard}>
+        <Text style={styles.formTitle}>Iniciar Sesión</Text>
 
-      <TextInput
-        ref={passwordRef}
-        label="Contraseña"
-        mode="outlined"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+        <View style={styles.inputContainer}>
+          <TextInput
+            label="📧 Email"
+            mode="outlined"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+            style={styles.input}
+            outlineColor="#E0E0E0"
+            activeOutlineColor="#4CAF50"
+          />
+          {emailIsInvalid && (
+            <HelperText type="error" visible={emailIsInvalid} style={styles.errorText}>
+              Ingresá un email válido.
+            </HelperText>
+          )}
+        </View>
 
-      {!!errorMsg && (
-        <HelperText type="error" visible>
-          {errorMsg}
-        </HelperText>
-      )}
+        <View style={styles.inputContainer}>
+          <TextInput
+            ref={passwordRef}
+            label="🔒 Contraseña"
+            mode="outlined"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+            style={styles.input}
+            outlineColor="#E0E0E0"
+            activeOutlineColor="#4CAF50"
+          />
+        </View>
 
-      <Button
-        mode="contained"
-        onPress={handleLogin}
-        loading={submitting}
-        disabled={submitting}
-      >
-        Iniciar sesión
-      </Button>
+        {!!errorMsg && (
+          <HelperText type="error" visible style={styles.errorText}>
+            {errorMsg}
+          </HelperText>
+        )}
 
-      {/* 4️⃣ Botón biométrico visible solo si hay token guardado */}
-      {biometricAvailable && (
         <Button
-          mode="outlined"
-          icon="fingerprint"
-          onPress={handleBiometricLogin}
-          style={{ marginTop: 8 }}
+          mode="contained"
+          onPress={handleLogin}
+          loading={submitting}
+          disabled={submitting}
+          style={styles.loginButton}
+          labelStyle={styles.buttonLabel}
         >
-          Ingresar con biometría
+          🚀 Iniciar sesión
         </Button>
-      )}
 
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          marginTop: 10,
-        }}
-      >
-        <TouchableOpacity onPress={goToForgot}>
-          <Text style={{ textDecorationLine: "underline" }}>
-            Ha olvidado su contraseña
-          </Text>
+        {/* Botón biométrico visible solo si hay token guardado */}
+        {biometricAvailable && (
+          <Button
+            mode="outlined"
+            icon="fingerprint"
+            onPress={handleBiometricLogin}
+            style={styles.biometricButton}
+            labelStyle={styles.biometricButtonLabel}
+          >
+            👆 Ingresar con biometría
+          </Button>
+        )}
+      </View>
+
+      {/* Card de navegación */}
+      <View style={styles.navigationCard}>
+        <Text style={styles.navTitle}>¿Necesitas ayuda?</Text>
+        
+        <TouchableOpacity onPress={goToForgot} style={styles.navButton}>
+          <Text style={styles.navButtonText}>🔑 ¿Olvidaste tu contraseña?</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={goToRegister}>
-          <Text style={{ textDecorationLine: "underline" }}>Registrarse</Text>
+        <View style={styles.divider} />
+
+        <Text style={styles.newUserText}>¿Nuevo en RitmoFit?</Text>
+        <TouchableOpacity onPress={goToRegister} style={styles.registerButton}>
+          <Text style={styles.registerButtonText}>✨ Crear cuenta nueva</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    backgroundColor: '#4CAF50',
+    paddingTop: 50,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    alignItems: 'center',
+  },
+  headerIcon: {
+    fontSize: 48,
+    marginBottom: 10,
+  },
+  title: {
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 8,
+    fontWeight: 'bold',
+  },
+  subtitle: {
+    color: 'rgba(255,255,255,0.9)',
+    textAlign: 'center',
+    fontSize: 16,
+  },
+  formCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    margin: 20,
+    marginTop: -10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  formTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  inputContainer: {
+    marginBottom: 15,
+  },
+  input: {
+    backgroundColor: '#fff',
+  },
+  errorText: {
+    marginTop: 5,
+  },
+  loginButton: {
+    backgroundColor: '#4CAF50',
+    marginTop: 10,
+    marginBottom: 15,
+    paddingVertical: 5,
+  },
+  buttonLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  biometricButton: {
+    borderColor: '#4CAF50',
+    marginBottom: 10,
+  },
+  biometricButtonLabel: {
+    color: '#4CAF50',
+    fontSize: 14,
+  },
+  navigationCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    margin: 20,
+    marginTop: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  navTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 15,
+  },
+  navButton: {
+    backgroundColor: '#f8f8f8',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  navButtonText: {
+    color: '#4CAF50',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginVertical: 20,
+  },
+  newUserText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  registerButton: {
+    backgroundColor: '#4CAF50',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  registerButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});
