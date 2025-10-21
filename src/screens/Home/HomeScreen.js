@@ -57,7 +57,11 @@ export default function HomeScreen({ navigation }) {
   };
 
   const handleGoToMyReservations = () => {
-  navigation.navigate('MyReservations');
+    navigation.navigate('MyReservations');
+  };
+
+  const handleGoToHistory = () => {
+    navigation.navigate('History');
   };
 
   const getDisciplineIcon = (discipline) => {
@@ -166,7 +170,7 @@ export default function HomeScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.actionCard}
-          onPress={() => Alert.alert('Próximamente', 'Función próximamente disponible')}
+          onPress={handleGoToHistory}
         >
           <Text style={styles.actionIcon}>📊</Text>
           <View style={styles.actionInfo}>

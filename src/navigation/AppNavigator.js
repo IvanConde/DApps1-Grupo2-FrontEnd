@@ -10,6 +10,7 @@ import ProfileScreen from "../screens/Profile/ProfileScreen";
 import ClassesScreen from "../screens/Classes/ClassesScreen";
 import ClassDetailScreen from "../screens/Classes/ClassDetailScreen";
 import ClassUser from '../screens/Classes/ClassUser';
+import HistoryScreen from '../screens/History/HistoryScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -63,6 +64,11 @@ export default function AppNavigator() {
         name="MyReservations"
         component={ClassUser}
         options={{ headerShown: false }} // header personalizado como en Classes
+      />
+      <Stack.Screen
+        name="History"
+        component={HistoryScreen}
+        options={{ headerShown: false }} // header personalizado
       />
     </Stack.Navigator>
   );
