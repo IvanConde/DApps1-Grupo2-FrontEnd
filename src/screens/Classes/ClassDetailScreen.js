@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from 'react-native';
-import { createReservation } from '../../services/reservations';
+import { createReservation, getMyReservations } from '../../services/reservations';
 import {
   View,
   Text,
@@ -17,9 +17,11 @@ const ClassDetailScreen = ({ route, navigation }) => {
   const { classId, fromMyReservations } = route.params || {};
   const [classData, setClassData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [hasReservation, setHasReservation] = useState(false);
 
   useEffect(() => {
     loadClassDetail();
+    checkExistingReservation();
   }, [classId]);
 
   const loadClassDetail = async () => {
@@ -33,6 +35,18 @@ const ClassDetailScreen = ({ route, navigation }) => {
       navigation.goBack();
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkExistingReservation = async () => {
+    try {
+      const myReservations = await getMyReservations();
+      // Comparamos con el ID de la clase (que viene como 'id' en las reservas)
+      const hasReserved = myReservations.some(reservation => reservation.id === parseInt(classId));
+      setHasReservation(hasReserved);
+    } catch (error) {
+      console.error('Error verificando reservas:', error);
+      // No mostramos error al usuario, solo registramos
     }
   };
 
@@ -86,6 +100,7 @@ const confirmReservation = async () => {
     const result = await createReservation(classData.id);
     Alert.alert('✅ Reserva confirmada', 'Tu reserva fue creada exitosamente.');
     setClassData({ ...classData, cupo: result.cupo_restante });
+    setHasReservation(true); // Actualizar estado local
   } catch (error) {
     Alert.alert('Error', error.error || 'No se pudo crear la reserva.');
   } finally {
@@ -232,7 +247,11 @@ const confirmReservation = async () => {
           <View style={styles.actionButtons}>
       {/* ✅ Mostrar botón solo si NO venís desde Mis Reservas */}
       {!fromMyReservations && (
-        classData.cupo > 0 ? (
+        hasReservation ? (
+          <View style={styles.alreadyReservedButton}>
+            <Text style={styles.alreadyReservedText}>✅ Ya tienes esta clase reservada</Text>
+          </View>
+        ) : classData.cupo > 0 ? (
           <TouchableOpacity
             style={[styles.reserveButton, { backgroundColor: disciplineColor }]}
             onPress={handleReserve}
@@ -560,6 +579,20 @@ const styles = StyleSheet.create({
   fullButtonText: {
     color: '#666',
     fontSize: 18,
+    fontWeight: 'bold',
+  },
+  alreadyReservedButton: {
+    backgroundColor: '#E8F5E8',
+    borderWidth: 2,
+    borderColor: '#4CAF50',
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  alreadyReservedText: {
+    color: '#2E7D32',
+    fontSize: 16,
     fontWeight: 'bold',
   },
   backToListButton: {
