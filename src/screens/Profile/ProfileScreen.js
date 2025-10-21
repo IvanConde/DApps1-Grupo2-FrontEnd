@@ -164,13 +164,18 @@ const ProfileScreen = ({ navigation }) => {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Mi Perfil</Text>
-          <Text style={styles.subtitle}>Edita tu información personal</Text>
-        </View>
+    <View style={styles.container}>
+      {/* Header verde consistente */}
+      <View style={styles.greenHeader}>
+        <Text style={styles.greenHeaderTitle}>Mi Perfil</Text>
+      </View>
+      
+      <ScrollView style={styles.scrollContainer}>
+        <View style={styles.content}>
+          {/* Subtitle */}
+          <View style={styles.header}>
+            <Text style={styles.subtitle}>Edita tu información personal</Text>
+          </View>
 
         {/* Foto de perfil */}
         <View style={styles.photoSection}>
@@ -258,13 +263,29 @@ const ProfileScreen = ({ navigation }) => {
         >
           <Text style={styles.backButtonText}>Volver</Text>
         </TouchableOpacity>
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  greenHeader: {
+    backgroundColor: '#4CAF50',
+    paddingTop: 50,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+  },
+  greenHeaderTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  scrollContainer: {
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
@@ -286,15 +307,10 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     alignItems: 'center',
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
-  },
   subtitle: {
     fontSize: 16,
     color: '#666',
+    textAlign: 'center',
   },
   photoSection: {
     alignItems: 'center',

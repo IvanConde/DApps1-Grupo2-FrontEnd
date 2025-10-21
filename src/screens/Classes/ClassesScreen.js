@@ -288,7 +288,7 @@ const ClassesScreen = ({ navigation }) => {
             renderItem={renderClassItem}
             keyExtractor={(item) => item.id.toString()}
             style={styles.list}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={[styles.listContent, { paddingBottom: 100 }]}
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
             }
@@ -296,6 +296,14 @@ const ClassesScreen = ({ navigation }) => {
           />
         </>
       )}
+
+      {/* Botón volver al final */}
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.navigate('Home')}
+      >
+        <Text style={styles.backButtonText}>Volver</Text>
+      </TouchableOpacity>
 
       <FiltersModal />
     </View>
@@ -546,6 +554,20 @@ const styles = StyleSheet.create({
   },
   applyButtonText: {
     color: '#fff',
+    fontWeight: '600',
+  },
+  backButton: {
+    margin: 20,
+    paddingVertical: 15,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    backgroundColor: '#fff',
+  },
+  backButtonText: {
+    color: '#666',
+    fontSize: 16,
     fontWeight: '600',
   },
 });

@@ -177,10 +177,18 @@ const ClassUser = ({ navigation }) => {
           data={reservations}
           keyExtractor={(it) => `${it.reservation_id}`}
           renderItem={renderItem}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         />
       )}
+
+      {/* Botón volver al final */}
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.navigate('Home')}
+      >
+        <Text style={styles.backButtonText}>Volver</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -217,6 +225,21 @@ const styles = StyleSheet.create({
     marginTop: 10, backgroundColor: '#eee', paddingVertical: 10, borderRadius: 8, alignItems: 'center',
   },
   disabledTxt: { color: '#777', fontWeight: '600' },
+
+  backButton: {
+    margin: 20,
+    paddingVertical: 15,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    backgroundColor: '#fff',
+  },
+  backButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '600',
+  },
 
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
   emptyText: { color: '#666', fontSize: 16, marginBottom: 10 },

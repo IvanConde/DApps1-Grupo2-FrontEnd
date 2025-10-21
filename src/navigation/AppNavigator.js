@@ -44,7 +44,7 @@ export default function AppNavigator() {
       <Stack.Screen
         name="Profile"
         component={ProfileScreen}
-        options={{ title: "Mi Perfil" }}
+        options={{ headerShown: false }} // header personalizado como en otras pantallas
       />
       <Stack.Screen
         name="Classes"
@@ -62,7 +62,7 @@ export default function AppNavigator() {
       <Stack.Screen
         name="MyReservations"
         component={ClassUser}
-        options={{ title: "Mis reservas" }}
+        options={{ headerShown: false }} // header personalizado como en Classes
       />
     </Stack.Navigator>
   );
