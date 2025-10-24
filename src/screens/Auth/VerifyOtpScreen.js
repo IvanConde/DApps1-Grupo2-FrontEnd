@@ -175,7 +175,7 @@ export default function VerifyOtpScreen({ route, navigation }) {
         <Text style={styles.tipsTitle}>💡 Consejos</Text>
         <View style={styles.tipsList}>
           <Text style={styles.tipItem}>• Revisa tu carpeta de spam o correo no deseado</Text>
-          <Text style={styles.tipItem}>• El código expira en 10 minutos</Text>
+          <Text style={styles.tipItem}>• El código expira en 5 minutos</Text>
           <Text style={styles.tipItem}>• Asegúrate de tener conexión a internet</Text>
         </View>
       </View>
