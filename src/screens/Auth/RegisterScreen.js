@@ -3,6 +3,25 @@ import React, { useState, useRef } from "react";
 import { View, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
 import { Text, TextInput, Button, HelperText } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+let SecureStore;
+try {
+  SecureStore = require('expo-secure-store');
+} catch (e) {
+  console.warn('expo-secure-store no instalado. Ejecuta: expo install expo-secure-store');
+}
+
+const storageGet = async (key) => {
+  if (SecureStore && SecureStore.getItemAsync) return await SecureStore.getItemAsync(key);
+  return await AsyncStorage.getItem(key);
+};
+const storageSet = async (key, value) => {
+  if (SecureStore && SecureStore.setItemAsync) return await SecureStore.setItemAsync(key, value);
+  return await AsyncStorage.setItem(key, value);
+};
+const storageRemove = async (key) => {
+  if (SecureStore && SecureStore.deleteItemAsync) return await SecureStore.deleteItemAsync(key);
+  return await AsyncStorage.removeItem(key);
+};
 import { register as registerRequest } from "../../services/auth";
 
 export default function RegisterScreen({ navigation }) {
@@ -49,8 +68,8 @@ export default function RegisterScreen({ navigation }) {
         password,
       });
 
-      if (data?.token) await AsyncStorage.setItem("token", data.token);
-      if (data?.user) await AsyncStorage.setItem("user", JSON.stringify(data.user));
+  if (data?.token) await storageSet("token", data.token);
+  if (data?.user) await storageSet("user", JSON.stringify(data.user));
 
       // Más adelante: navigation.replace("AppTabs");
       // Por ahora, volvemos al Login con un estado OK (opcional)

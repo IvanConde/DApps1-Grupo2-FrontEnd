@@ -3,9 +3,29 @@ import React, { useRef, useState, useEffect } from "react";
 import { View, TouchableOpacity, Alert, ScrollView, StyleSheet } from "react-native";
 import { Text, TextInput, Button, HelperText } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+let SecureStore;
+try {
+  SecureStore = require('expo-secure-store');
+} catch (e) {
+  console.warn('expo-secure-store no instalado. Ejecuta: expo install expo-secure-store');
+}
+
+const storageGet = async (key) => {
+  if (SecureStore && SecureStore.getItemAsync) return await SecureStore.getItemAsync(key);
+  return await AsyncStorage.getItem(key);
+};
+const storageSet = async (key, value) => {
+  if (SecureStore && SecureStore.setItemAsync) return await SecureStore.setItemAsync(key, value);
+  return await AsyncStorage.setItem(key, value);
+};
+const storageRemove = async (key) => {
+  if (SecureStore && SecureStore.deleteItemAsync) return await SecureStore.deleteItemAsync(key);
+  return await AsyncStorage.removeItem(key);
+};
 import * as LocalAuthentication from "expo-local-authentication";
 import { login as loginRequest } from "../../services/auth";
 import api from "../../api/client"; // para validar token
+import { me as meRequest } from "../../services/auth";
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
@@ -26,7 +46,7 @@ export default function LoginScreen({ navigation }) {
     try {
       const compatible = await LocalAuthentication.hasHardwareAsync();
       const enrolled = await LocalAuthentication.isEnrolledAsync();
-      const token = await AsyncStorage.getItem("token");
+  const token = await storageGet("token");
 
       console.log("Biometría compatible:", compatible);
       console.log("Biometría registrada:", enrolled);
@@ -97,7 +117,7 @@ export default function LoginScreen({ navigation }) {
 
 const handleBiometricLogin = async () => {
   try {
-    const token = await AsyncStorage.getItem("token");
+  const token = await storageGet("token");
     if (!token) {
       Alert.alert("No hay sesión guardada", "Iniciá sesión normalmente una vez.");
       return;
@@ -113,13 +133,13 @@ const handleBiometricLogin = async () => {
       return;
     }
 
-    // ✅ No pases headers manuales. El interceptor ya envía Authorization: Bearer <token>
-    const res = await api.get("/me");
+    // ✅ Usar la función centralizada me() que usa el interceptor y la ruta correcta
+    const me = await meRequest();
 
-    if (res.status === 200 && res.data?.user) {
+    if (me?.user) {
       navigation.replace("Home");
     } else {
-      await AsyncStorage.removeItem("token");
+      await storageRemove("token");
       Alert.alert("Sesión inválida", "Tu sesión expiró. Iniciá sesión de nuevo.");
     }
   } catch (err) {

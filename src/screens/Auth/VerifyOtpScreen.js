@@ -3,6 +3,25 @@ import React, { useState, useEffect } from "react";
 import { View, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
 import { Text, TextInput, Button, HelperText } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+let SecureStore;
+try {
+  SecureStore = require('expo-secure-store');
+} catch (e) {
+  console.warn('expo-secure-store no instalado. Ejecuta: expo install expo-secure-store');
+}
+
+const storageGet = async (key) => {
+  if (SecureStore && SecureStore.getItemAsync) return await SecureStore.getItemAsync(key);
+  return await AsyncStorage.getItem(key);
+};
+const storageSet = async (key, value) => {
+  if (SecureStore && SecureStore.setItemAsync) return await SecureStore.setItemAsync(key, value);
+  return await AsyncStorage.setItem(key, value);
+};
+const storageRemove = async (key) => {
+  if (SecureStore && SecureStore.deleteItemAsync) return await SecureStore.deleteItemAsync(key);
+  return await AsyncStorage.removeItem(key);
+};
 import { verifyOtp } from "../../services/auth";
 
 export default function VerifyOtpScreen({ route, navigation }) {
@@ -39,10 +58,10 @@ export default function VerifyOtpScreen({ route, navigation }) {
     try {
       const data = await verifyOtp(email, code.trim());
       if (data?.token) {
-        await AsyncStorage.setItem("token", data.token);
+        await storageSet("token", data.token);
       }
       if (data?.user) {
-        await AsyncStorage.setItem("user", JSON.stringify(data.user));
+        await storageSet("user", JSON.stringify(data.user));
       }
 
       setSuccessMsg("¡Código verificado con éxito! Bienvenido a RitmoFit");

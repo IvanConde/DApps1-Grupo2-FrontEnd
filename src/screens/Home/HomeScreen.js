@@ -11,6 +11,25 @@ import {
 } from "react-native";
 import { Text, Button } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+let SecureStore;
+try {
+  SecureStore = require('expo-secure-store');
+} catch (e) {
+  console.warn('expo-secure-store no instalado. Ejecuta: expo install expo-secure-store');
+}
+
+const storageGet = async (key) => {
+  if (SecureStore && SecureStore.getItemAsync) return await SecureStore.getItemAsync(key);
+  return await AsyncStorage.getItem(key);
+};
+const storageSet = async (key, value) => {
+  if (SecureStore && SecureStore.setItemAsync) return await SecureStore.setItemAsync(key, value);
+  return await AsyncStorage.setItem(key, value);
+};
+const storageRemove = async (key) => {
+  if (SecureStore && SecureStore.deleteItemAsync) return await SecureStore.deleteItemAsync(key);
+  return await AsyncStorage.removeItem(key);
+};
 import { getClasses } from "../../services/classes";
 
 export default function HomeScreen({ navigation }) {
@@ -35,8 +54,8 @@ export default function HomeScreen({ navigation }) {
   };
 
   const handleLogout = async () => {
-    await AsyncStorage.removeItem("token");
-    await AsyncStorage.removeItem("user");
+  await storageRemove("token");
+  await storageRemove("user");
     navigation.replace("Login");
   };
 
