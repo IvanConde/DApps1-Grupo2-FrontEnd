@@ -1,25 +1,36 @@
 // src/screens/Auth/RegisterScreen.js
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { View, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
-import { Text, TextInput, Button, HelperText } from "react-native-paper";
+import {
+  Text,
+  TextInput,
+  Button,
+  HelperText,
+  Snackbar,
+} from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 let SecureStore;
 try {
-  SecureStore = require('expo-secure-store');
+  SecureStore = require("expo-secure-store");
 } catch (e) {
-  console.warn('expo-secure-store no instalado. Ejecuta: expo install expo-secure-store');
+  console.warn(
+    "expo-secure-store no instalado. Ejecuta: expo install expo-secure-store"
+  );
 }
 
 const storageGet = async (key) => {
-  if (SecureStore && SecureStore.getItemAsync) return await SecureStore.getItemAsync(key);
+  if (SecureStore && SecureStore.getItemAsync)
+    return await SecureStore.getItemAsync(key);
   return await AsyncStorage.getItem(key);
 };
 const storageSet = async (key, value) => {
-  if (SecureStore && SecureStore.setItemAsync) return await SecureStore.setItemAsync(key, value);
+  if (SecureStore && SecureStore.setItemAsync)
+    return await SecureStore.setItemAsync(key, value);
   return await AsyncStorage.setItem(key, value);
 };
 const storageRemove = async (key) => {
-  if (SecureStore && SecureStore.deleteItemAsync) return await SecureStore.deleteItemAsync(key);
+  if (SecureStore && SecureStore.deleteItemAsync)
+    return await SecureStore.deleteItemAsync(key);
   return await AsyncStorage.removeItem(key);
 };
 import { register as registerRequest } from "../../services/auth";
@@ -29,33 +40,40 @@ export default function RegisterScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword2, setShowPassword2] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const pass2Ref = useRef(null);
 
-  const emailInvalid =
-    email.length > 0 && !/^\S+@\S+\.\S+$/.test(email.trim());
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMsg, setSnackbarMsg] = useState("");
+
+  const emailInvalid = email.length > 0 && !/^\S+@\S+\.\S+$/.test(email.trim());
   const passwordTooShort = password.length > 0 && password.length < 6;
   const passwordsDontMatch = password2.length > 0 && password !== password2;
+
+  useEffect(() => {
+    let t;
+    if (snackbarVisible) {
+      t = setTimeout(() => {
+        setSnackbarVisible(false);
+        navigation.goBack();
+      }, 2000);
+    }
+    return () => clearTimeout(t);
+  }, [snackbarVisible, navigation]);
 
   const handleRegister = async () => {
     setErrorMsg("");
 
-    if (!name || !email || !password || !password2) {
-      setErrorMsg("Completá todos los campos.");
-      return;
-    }
-    if (emailInvalid) {
-      setErrorMsg("El email no es válido.");
-      return;
-    }
-    if (passwordTooShort) {
-      setErrorMsg("La contraseña debe tener al menos 6 caracteres.");
-      return;
-    }
+    if (!name || !email || !password || !password2)
+      return setErrorMsg("Completá todos los campos.");
+    if (emailInvalid) return setErrorMsg("El email no es válido.");
+    if (passwordTooShort)
+      return setErrorMsg("La contraseña debe tener al menos 6 caracteres.");
     if (password !== password2) {
       setErrorMsg("Las contraseñas no coinciden.");
-      // foco en confirmar contraseña
       requestAnimationFrame(() => pass2Ref.current?.focus());
       return;
     }
@@ -67,24 +85,18 @@ export default function RegisterScreen({ navigation }) {
         email: email.trim(),
         password,
       });
-
-  if (data?.token) await storageSet("token", data.token);
-  if (data?.user) await storageSet("user", JSON.stringify(data.user));
-
-      // Más adelante: navigation.replace("AppTabs");
-      // Por ahora, volvemos al Login con un estado OK (opcional)
-      navigation.goBack();
+      if (data?.token) await storageSet("token", data.token);
+      if (data?.user) await storageSet("user", JSON.stringify(data.user));
+      setSnackbarMsg("¡Usuario registrado con éxito!");
+      setSnackbarVisible(true);
     } catch (err) {
       const status = err?.response?.status;
       const apiMsg = err?.response?.data?.message || err?.response?.data?.error;
-
-      if (status === 409) {
+      if (status === 409)
         setErrorMsg(apiMsg || "Ese email ya está registrado.");
-      } else if (status === 400) {
+      else if (status === 400)
         setErrorMsg(apiMsg || "Datos inválidos para registrarse.");
-      } else {
-        setErrorMsg(apiMsg || "No se pudo completar el registro.");
-      }
+      else setErrorMsg(apiMsg || "No se pudo completar el registro.");
     } finally {
       setSubmitting(false);
     }
@@ -93,165 +105,210 @@ export default function RegisterScreen({ navigation }) {
   const goToLogin = () => navigation.navigate("Login");
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Header con estilo coherente */}
-      <View style={styles.header}>
-        <Text style={styles.headerIcon}>🌟</Text>
-        <Text variant="headlineMedium" style={styles.title}>
-          ¡Únete a RitmoFit!
-        </Text>
-        <Text style={styles.subtitle}>
-          Crea tu cuenta y comienza tu aventura fitness
-        </Text>
-      </View>
-
-      {/* Formulario en card */}
-      <View style={styles.formCard}>
-        <Text style={styles.formTitle}>Crear Cuenta</Text>
-        
-        <View style={styles.inputContainer}>
-          <TextInput
-            label="👤 Nombre completo"
-            mode="outlined"
-            value={name}
-            onChangeText={setName}
-            style={styles.input}
-            outlineColor="#E0E0E0"
-            activeOutlineColor="#4CAF50"
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <TextInput
-            label="📧 Email"
-            mode="outlined"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            value={email}
-            onChangeText={setEmail}
-            style={styles.input}
-            outlineColor="#E0E0E0"
-            activeOutlineColor="#4CAF50"
-          />
-          {emailInvalid && (
-            <HelperText type="error" visible={emailInvalid} style={styles.helperText}>
-              Ingresá un email válido.
-            </HelperText>
-          )}
-        </View>
-
-        <View style={styles.inputContainer}>
-          <TextInput
-            label="🔒 Contraseña"
-            mode="outlined"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-            style={styles.input}
-            outlineColor="#E0E0E0"
-            activeOutlineColor="#4CAF50"
-          />
-          {passwordTooShort && (
-            <HelperText type="error" visible={passwordTooShort} style={styles.helperText}>
-              Debe tener al menos 6 caracteres.
-            </HelperText>
-          )}
-        </View>
-
-        <View style={styles.inputContainer}>
-          <TextInput
-            ref={pass2Ref}
-            label="🔐 Confirmar contraseña"
-            mode="outlined"
-            secureTextEntry
-            value={password2}
-            onChangeText={setPassword2}
-            style={styles.input}
-            outlineColor="#E0E0E0"
-            activeOutlineColor="#4CAF50"
-          />
-          {passwordsDontMatch && (
-            <HelperText type="error" visible={passwordsDontMatch} style={styles.helperText}>
-              Las contraseñas no coinciden.
-            </HelperText>
-          )}
-        </View>
-
-        {!!errorMsg && (
-          <HelperText type="error" visible style={styles.errorText}>
-            {errorMsg}
-          </HelperText>
-        )}
-
-        <Button
-          mode="contained"
-          onPress={handleRegister}
-          loading={submitting}
-          disabled={submitting}
-          style={styles.registerButton}
-          labelStyle={styles.buttonLabel}
-        >
-          ✨ Crear mi cuenta
-        </Button>
-
-        {/* Información adicional */}
-        <View style={styles.infoContainer}>
-          <Text style={styles.infoText}>
-            Al registrarte aceptas nuestros términos de uso y política de privacidad
+    <>
+      <ScrollView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerIcon}>🌟</Text>
+          <Text variant="headlineMedium" style={styles.title}>
+            ¡Únete a RitmoFit!
+          </Text>
+          <Text style={styles.subtitle}>
+            Crea tu cuenta y comienza tu aventura fitness
           </Text>
         </View>
-      </View>
 
-      {/* Card de login */}
-      <View style={styles.loginCard}>
-        <Text style={styles.loginTitle}>¿Ya tienes cuenta?</Text>
-        <Text style={styles.loginSubtitle}>
-          Inicia sesión con tu cuenta existente
-        </Text>
-        <TouchableOpacity onPress={goToLogin} style={styles.loginButton}>
-          <Text style={styles.loginButtonText}>🔑 Iniciar sesión</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+        <View style={styles.formCard}>
+          <Text style={styles.formTitle}>Crear Cuenta</Text>
+
+          <View style={styles.inputContainer}>
+            <TextInput
+              label="👤 Nombre completo"
+              mode="outlined"
+              value={name}
+              onChangeText={setName}
+              style={styles.input}
+              outlineColor="#E0E0E0"
+              activeOutlineColor="#4CAF50"
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <TextInput
+              label="📧 Email"
+              mode="outlined"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+              style={styles.input}
+              outlineColor="#E0E0E0"
+              activeOutlineColor="#4CAF50"
+            />
+            {emailInvalid && (
+              <HelperText
+                type="error"
+                visible={emailInvalid}
+                style={styles.helperText}
+              >
+                Ingresá un email válido.
+              </HelperText>
+            )}
+          </View>
+
+          <View style={styles.inputContainer}>
+            <TextInput
+              label="🔒 Contraseña"
+              mode="outlined"
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+              style={styles.input}
+              outlineColor="#E0E0E0"
+              activeOutlineColor="#4CAF50"
+              right={
+                <TextInput.Icon
+                  icon={showPassword ? "eye-off" : "eye"}
+                  onPress={() => setShowPassword((p) => !p)}
+                  forceTextInputFocus={false}
+                  accessibilityLabel={
+                    showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                  }
+                />
+              }
+            />
+            {passwordTooShort && (
+              <HelperText
+                type="error"
+                visible={passwordTooShort}
+                style={styles.helperText}
+              >
+                Debe tener al menos 6 caracteres.
+              </HelperText>
+            )}
+          </View>
+
+          <View style={styles.inputContainer}>
+            <TextInput
+              ref={pass2Ref}
+              label="🔐 Confirmar contraseña"
+              mode="outlined"
+              secureTextEntry={!showPassword2}
+              value={password2}
+              onChangeText={setPassword2}
+              style={styles.input}
+              outlineColor="#E0E0E0"
+              activeOutlineColor="#4CAF50"
+              right={
+                <TextInput.Icon
+                  icon={showPassword2 ? "eye-off" : "eye"}
+                  onPress={() => setShowPassword2((p) => !p)}
+                  forceTextInputFocus={false}
+                  accessibilityLabel={
+                    showPassword2 ? "Ocultar contraseña" : "Mostrar contraseña"
+                  }
+                />
+              }
+            />
+            {passwordsDontMatch && (
+              <HelperText
+                type="error"
+                visible={passwordsDontMatch}
+                style={styles.helperText}
+              >
+                Las contraseñas no coinciden.
+              </HelperText>
+            )}
+          </View>
+
+          {!!errorMsg && (
+            <HelperText type="error" visible style={styles.errorText}>
+              {errorMsg}
+            </HelperText>
+          )}
+
+          <Button
+            mode="contained"
+            onPress={handleRegister}
+            loading={submitting}
+            disabled={submitting}
+            style={styles.registerButton}
+            labelStyle={styles.buttonLabel}
+          >
+            ✨ Crear mi cuenta
+          </Button>
+
+          <View style={styles.infoContainer}>
+            <Text style={styles.infoText}>
+              Al registrarte aceptas nuestros términos de uso y política de
+              privacidad
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.loginCard}>
+          <Text style={styles.loginTitle}>¿Ya tienes cuenta?</Text>
+          <Text style={styles.loginSubtitle}>
+            Inicia sesión con tu cuenta existente
+          </Text>
+          <TouchableOpacity onPress={goToLogin} style={styles.loginButton}>
+            <Text style={styles.loginButtonText}>🔑 Iniciar sesión</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => {
+          setSnackbarVisible(false);
+          navigation.goBack();
+        }}
+        duration={2000}
+        action={{
+          label: "Iniciar sesión",
+          onPress: () => {
+            setSnackbarVisible(false);
+            navigation.goBack();
+          },
+        }}
+        style={styles.snackbar}
+      >
+        {snackbarMsg}
+      </Snackbar>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
+  container: { flex: 1, backgroundColor: "#f5f5f5" },
   header: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: "#4CAF50",
     paddingTop: 60,
     paddingBottom: 40,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
-    alignItems: 'center',
+    alignItems: "center",
   },
-  headerIcon: {
-    fontSize: 48,
-    marginBottom: 10,
-  },
+  headerIcon: { fontSize: 48, marginBottom: 10 },
   title: {
-    color: '#fff',
-    textAlign: 'center',
+    color: "#fff",
+    textAlign: "center",
     marginBottom: 8,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   subtitle: {
-    color: 'rgba(255,255,255,0.9)',
-    textAlign: 'center',
+    color: "rgba(255,255,255,0.9)",
+    textAlign: "center",
     fontSize: 16,
   },
+
   formCard: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     margin: 20,
     marginTop: -20,
     borderRadius: 20,
     padding: 25,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -259,53 +316,39 @@ const styles = StyleSheet.create({
   },
   formTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
+    fontWeight: "bold",
+    color: "#333",
+    textAlign: "center",
     marginBottom: 20,
   },
-  inputContainer: {
-    marginBottom: 15,
-  },
-  input: {
-    backgroundColor: '#fff',
-  },
-  helperText: {
-    marginTop: 5,
-  },
-  errorText: {
-    textAlign: 'center',
-    marginBottom: 15,
-    fontSize: 14,
-  },
+  inputContainer: { marginBottom: 15 },
+  input: { backgroundColor: "#fff" },
+  helperText: { marginTop: 5 },
+  errorText: { textAlign: "center", marginBottom: 15, fontSize: 14 },
   registerButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: "#4CAF50",
     paddingVertical: 8,
     borderRadius: 12,
     marginTop: 10,
     marginBottom: 15,
   },
-  buttonLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  infoContainer: {
-    marginTop: 10,
-  },
+  buttonLabel: { fontSize: 16, fontWeight: "bold" },
+  infoContainer: { marginTop: 10 },
   infoText: {
     fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
+    color: "#666",
+    textAlign: "center",
     lineHeight: 16,
   },
+
   loginCard: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     marginHorizontal: 20,
     marginBottom: 20,
     borderRadius: 20,
     padding: 25,
-    alignItems: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -313,27 +356,25 @@ const styles = StyleSheet.create({
   },
   loginTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
     marginBottom: 8,
   },
   loginSubtitle: {
     fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
+    color: "#666",
+    textAlign: "center",
     marginBottom: 20,
   },
   loginButton: {
-    backgroundColor: '#E8F5E8',
+    backgroundColor: "#E8F5E8",
     paddingHorizontal: 30,
     paddingVertical: 12,
     borderRadius: 25,
     borderWidth: 1,
-    borderColor: '#4CAF50',
+    borderColor: "#4CAF50",
   },
-  loginButtonText: {
-    color: '#4CAF50',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  loginButtonText: { color: "#4CAF50", fontSize: 16, fontWeight: "bold" },
+
+  snackbar: { backgroundColor: "#2e7d32" },
 });
