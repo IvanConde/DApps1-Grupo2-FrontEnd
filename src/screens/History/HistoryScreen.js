@@ -633,7 +633,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '70%',
+    maxHeight: '85%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -660,6 +660,7 @@ const styles = StyleSheet.create({
   },
   filtersContent: {
     padding: 20,
+    paddingBottom: 80,
   },
   dateSelectors: {
     flexDirection: 'row',
@@ -757,6 +758,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 20,
+    marginBottom: 40,
   },
   clearButton: {
     flex: 1,
