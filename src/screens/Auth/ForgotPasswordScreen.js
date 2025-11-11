@@ -1,32 +1,30 @@
 // src/screens/Auth/ForgotPasswordScreen.js
 import React, { useRef, useState } from "react";
 import { View, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, TextInput, Button, HelperText } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
 let SecureStore;
 try {
   SecureStore = require("expo-secure-store");
 } catch (e) {
-  console.warn(
-    "expo-secure-store no instalado. Ejecuta: expo install expo-secure-store"
-  );
+  console.warn("expo-secure-store no instalado. Ejecuta: expo install expo-secure-store");
 }
 
 const storageGet = async (key) => {
-  if (SecureStore && SecureStore.getItemAsync)
-    return await SecureStore.getItemAsync(key);
+  if (SecureStore && SecureStore.getItemAsync) return await SecureStore.getItemAsync(key);
   return await AsyncStorage.getItem(key);
 };
 const storageSet = async (key, value) => {
-  if (SecureStore && SecureStore.setItemAsync)
-    return await SecureStore.setItemAsync(key, value);
+  if (SecureStore && SecureStore.setItemAsync) return await SecureStore.setItemAsync(key, value);
   return await AsyncStorage.setItem(key, value);
 };
 const storageRemove = async (key) => {
-  if (SecureStore && SecureStore.deleteItemAsync)
-    return await SecureStore.deleteItemAsync(key);
+  if (SecureStore && SecureStore.deleteItemAsync) return await SecureStore.deleteItemAsync(key);
   return await AsyncStorage.removeItem(key);
 };
+
 import { requestOtp, verifyOtp, setPassword } from "../../services/auth";
 
 export default function ForgotPasswordScreen({ navigation }) {
@@ -54,9 +52,7 @@ export default function ForgotPasswordScreen({ navigation }) {
       setStep("verify");
       requestAnimationFrame(() => codeRef.current?.focus());
     } catch (e) {
-      setErrorMsg(
-        e?.response?.data?.error || e?.message || "No se pudo enviar el código."
-      );
+      setErrorMsg(e?.response?.data?.error || e?.message || "No se pudo enviar el código.");
     } finally {
       setSubmitting(false);
     }
@@ -73,8 +69,7 @@ export default function ForgotPasswordScreen({ navigation }) {
       setStep("reset");
       requestAnimationFrame(() => passRef.current?.focus());
     } catch (e) {
-      const msg =
-        e?.response?.data?.error || e?.message || "Código inválido o expirado.";
+      const msg = e?.response?.data?.error || e?.message || "Código inválido o expirado.";
       setErrorMsg(msg);
     } finally {
       setSubmitting(false);
@@ -83,17 +78,13 @@ export default function ForgotPasswordScreen({ navigation }) {
 
   const handleReset = async () => {
     setErrorMsg("");
-    if (!canReset)
-      return setErrorMsg("La contraseña debe tener al menos 6 caracteres.");
+    if (!canReset) return setErrorMsg("La contraseña debe tener al menos 6 caracteres.");
     setSubmitting(true);
     try {
       await setPassword(newPassword);
       navigation.goBack();
     } catch (e) {
-      const msg =
-        e?.response?.data?.error ||
-        e?.message ||
-        "No se pudo actualizar la contraseña.";
+      const msg = e?.response?.data?.error || e?.message || "No se pudo actualizar la contraseña.";
       setErrorMsg(msg);
     } finally {
       setSubmitting(false);
@@ -105,23 +96,11 @@ export default function ForgotPasswordScreen({ navigation }) {
   const getStepInfo = () => {
     switch (step) {
       case "request":
-        return {
-          icon: "🔐",
-          title: "Recuperar Acceso",
-          subtitle: "Te enviaremos un código a tu email",
-        };
+        return { icon: "🔐", title: "Recuperar Acceso", subtitle: "Te enviaremos un código a tu email" };
       case "verify":
-        return {
-          icon: "📱",
-          title: "Verificar Código",
-          subtitle: "Ingresa el código que te enviamos",
-        };
+        return { icon: "📱", title: "Verificar Código", subtitle: "Ingresa el código que te enviamos" };
       case "reset":
-        return {
-          icon: "🔑",
-          title: "Nueva Contraseña",
-          subtitle: "Crea una contraseña segura",
-        };
+        return { icon: "🔑", title: "Nueva Contraseña", subtitle: "Crea una contraseña segura" };
       default:
         return { icon: "🔐", title: "", subtitle: "" };
     }
@@ -129,198 +108,190 @@ export default function ForgotPasswordScreen({ navigation }) {
   const stepInfo = getStepInfo();
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerIcon}>{stepInfo.icon}</Text>
-        <Text variant="headlineMedium" style={styles.title}>
-          {stepInfo.title}
-        </Text>
-        <Text style={styles.subtitle}>{stepInfo.subtitle}</Text>
-      </View>
+    <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <Text style={styles.headerIcon}>{stepInfo.icon}</Text>
+          <Text variant="headlineMedium" style={styles.title}>
+            {stepInfo.title}
+          </Text>
+          <Text style={styles.subtitle}>{stepInfo.subtitle}</Text>
+        </View>
 
-      <View style={styles.formCard}>
-        {step === "request" && (
-          <>
-            <Text style={styles.formTitle}>Solicitar Código</Text>
-            <Text style={styles.instructionText}>
-              Ingresa tu email y te enviaremos un código de recuperación
-            </Text>
+        <View style={styles.formCard}>
+          {step === "request" && (
+            <>
+              <Text style={styles.formTitle}>Solicitar Código</Text>
+              <Text style={styles.instructionText}>
+                Ingresa tu email y te enviaremos un código de recuperación
+              </Text>
 
-            <View style={styles.inputContainer}>
-              <TextInput
-                label="📧 Email"
-                mode="outlined"
-                autoCapitalize="none"
-                keyboardType="email-address"
-                value={email}
-                onChangeText={setEmail}
-                style={styles.input}
-                outlineColor="#E0E0E0"
-                activeOutlineColor="#4CAF50"
-              />
-              {emailInvalid && (
-                <HelperText
-                  type="error"
-                  visible={emailInvalid}
-                  style={styles.helperText}
-                >
-                  Ingresá un email válido.
+              <View style={styles.inputContainer}>
+                <TextInput
+                  label="📧 Email"
+                  mode="outlined"
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  value={email}
+                  onChangeText={setEmail}
+                  style={styles.input}
+                  outlineColor="#E0E0E0"
+                  activeOutlineColor="#4CAF50"
+                />
+                {emailInvalid && (
+                  <HelperText type="error" visible={emailInvalid} style={styles.helperText}>
+                    Ingresá un email válido.
+                  </HelperText>
+                )}
+              </View>
+
+              {!!errorMsg && (
+                <HelperText type="error" visible style={styles.errorText}>
+                  {errorMsg}
                 </HelperText>
               )}
-            </View>
 
-            {!!errorMsg && (
-              <HelperText type="error" visible style={styles.errorText}>
-                {errorMsg}
-              </HelperText>
-            )}
+              <Button
+                mode="contained"
+                onPress={handleRequest}
+                loading={submitting}
+                disabled={submitting}
+                style={styles.actionButton}
+                labelStyle={styles.buttonLabel}
+              >
+                📤 Enviar código
+              </Button>
+            </>
+          )}
 
-            <Button
-              mode="contained"
-              onPress={handleRequest}
-              loading={submitting}
-              disabled={submitting}
-              style={styles.actionButton}
-              labelStyle={styles.buttonLabel}
-            >
-              📤 Enviar código
-            </Button>
-          </>
-        )}
+          {step === "verify" && (
+            <>
+              <Text style={styles.formTitle}>Verificar Código</Text>
+              <Text style={styles.instructionText}>
+                Te enviamos un código a{"\n"}
+                <Text style={styles.highlightText}>{email}</Text>
+              </Text>
 
-        {step === "verify" && (
-          <>
-            <Text style={styles.formTitle}>Verificar Código</Text>
-            <Text style={styles.instructionText}>
-              Te enviamos un código a{"\n"}
-              <Text style={styles.highlightText}>{email}</Text>
-            </Text>
+              <View style={styles.inputContainer}>
+                <TextInput
+                  ref={codeRef}
+                  label="🔢 Código de verificación"
+                  mode="outlined"
+                  keyboardType="number-pad"
+                  value={code}
+                  onChangeText={setCode}
+                  style={styles.input}
+                  outlineColor="#E0E0E0"
+                  activeOutlineColor="#4CAF50"
+                />
+              </View>
 
-            <View style={styles.inputContainer}>
-              <TextInput
-                ref={codeRef}
-                label="🔢 Código de verificación"
-                mode="outlined"
-                keyboardType="number-pad"
-                value={code}
-                onChangeText={setCode}
-                style={styles.input}
-                outlineColor="#E0E0E0"
-                activeOutlineColor="#4CAF50"
+              {!!errorMsg && (
+                <HelperText type="error" visible style={styles.errorText}>
+                  {errorMsg}
+                </HelperText>
+              )}
+
+              <Button
+                mode="contained"
+                onPress={handleVerify}
+                loading={submitting}
+                disabled={submitting}
+                style={styles.actionButton}
+                labelStyle={styles.buttonLabel}
+              >
+                ✅ Verificar código
+              </Button>
+            </>
+          )}
+
+          {step === "reset" && (
+            <>
+              <Text style={styles.formTitle}>Nueva Contraseña</Text>
+              <Text style={styles.instructionText}>
+                Código verificado para{"\n"}
+                <Text style={styles.highlightText}>{email}</Text>
+              </Text>
+
+              <View style={styles.inputContainer}>
+                <TextInput
+                  ref={passRef}
+                  label="🔒 Nueva contraseña"
+                  mode="outlined"
+                  secureTextEntry={!showNewPassword}
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  style={styles.input}
+                  outlineColor="#E0E0E0"
+                  activeOutlineColor="#4CAF50"
+                  right={
+                    <TextInput.Icon
+                      icon={showNewPassword ? "eye-off" : "eye"}
+                      onPress={() => setShowNewPassword((p) => !p)}
+                      forceTextInputFocus={false}
+                    />
+                  }
+                />
+                <HelperText type="info" visible style={styles.helperText}>
+                  Mínimo 6 caracteres
+                </HelperText>
+              </View>
+
+              {!!errorMsg && (
+                <HelperText type="error" visible style={styles.errorText}>
+                  {errorMsg}
+                </HelperText>
+              )}
+
+              <Button
+                mode="contained"
+                onPress={handleReset}
+                loading={submitting}
+                disabled={submitting}
+                style={styles.actionButton}
+                labelStyle={styles.buttonLabel}
+              >
+                🔄 Cambiar contraseña
+              </Button>
+            </>
+          )}
+
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width:
+                      step === "request" ? "33%" : step === "verify" ? "66%" : "100%",
+                  },
+                ]}
               />
             </View>
-
-            {!!errorMsg && (
-              <HelperText type="error" visible style={styles.errorText}>
-                {errorMsg}
-              </HelperText>
-            )}
-
-            <Button
-              mode="contained"
-              onPress={handleVerify}
-              loading={submitting}
-              disabled={submitting}
-              style={styles.actionButton}
-              labelStyle={styles.buttonLabel}
-            >
-              ✅ Verificar código
-            </Button>
-          </>
-        )}
-
-        {step === "reset" && (
-          <>
-            <Text style={styles.formTitle}>Nueva Contraseña</Text>
-            <Text style={styles.instructionText}>
-              Código verificado para{"\n"}
-              <Text style={styles.highlightText}>{email}</Text>
+            <Text style={styles.progressText}>
+              Paso {step === "request" ? "1" : step === "verify" ? "2" : "3"} de 3
             </Text>
-
-            <View style={styles.inputContainer}>
-              <TextInput
-                ref={passRef}
-                label="🔒 Nueva contraseña"
-                mode="outlined"
-                secureTextEntry={!showNewPassword}
-                value={newPassword}
-                onChangeText={setNewPassword}
-                style={styles.input}
-                outlineColor="#E0E0E0"
-                activeOutlineColor="#4CAF50"
-                right={
-                  <TextInput.Icon
-                    icon={showNewPassword ? "eye-off" : "eye"}
-                    onPress={() => setShowNewPassword((p) => !p)}
-                    forceTextInputFocus={false}
-                    accessibilityLabel={
-                      showNewPassword
-                        ? "Ocultar contraseña"
-                        : "Mostrar contraseña"
-                    }
-                  />
-                }
-              />
-              <HelperText type="info" visible style={styles.helperText}>
-                Mínimo 6 caracteres
-              </HelperText>
-            </View>
-
-            {!!errorMsg && (
-              <HelperText type="error" visible style={styles.errorText}>
-                {errorMsg}
-              </HelperText>
-            )}
-
-            <Button
-              mode="contained"
-              onPress={handleReset}
-              loading={submitting}
-              disabled={submitting}
-              style={styles.actionButton}
-              labelStyle={styles.buttonLabel}
-            >
-              🔄 Cambiar contraseña
-            </Button>
-          </>
-        )}
-
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width:
-                    step === "request"
-                      ? "33%"
-                      : step === "verify"
-                      ? "66%"
-                      : "100%",
-                },
-              ]}
-            />
           </View>
-          <Text style={styles.progressText}>
-            Paso {step === "request" ? "1" : step === "verify" ? "2" : "3"} de 3
-          </Text>
         </View>
-      </View>
 
-      <View style={styles.navigationCard}>
-        <Text style={styles.navTitle}>¿Recordaste tu contraseña?</Text>
-        <TouchableOpacity onPress={goToLogin} style={styles.navButton}>
-          <Text style={styles.navButtonText}>
-            🔑 Volver al inicio de sesión
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+        <View style={styles.navigationCard}>
+          <Text style={styles.navTitle}>¿Recordaste tu contraseña?</Text>
+          <TouchableOpacity onPress={goToLogin} style={styles.navButton}>
+            <Text style={styles.navButtonText}>🔑 Volver al inicio de sesión</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f5f5" },
+  safeArea: { flex: 1, backgroundColor: "#f5f5f5" },
+  container: { flex: 1 },
   header: {
     backgroundColor: "#4CAF50",
     paddingTop: 60,
@@ -337,22 +308,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontWeight: "bold",
   },
-  subtitle: {
-    color: "rgba(255,255,255,0.9)",
-    textAlign: "center",
-    fontSize: 16,
-  },
-
+  subtitle: { color: "rgba(255,255,255,0.9)", textAlign: "center", fontSize: 16 },
   formCard: {
     backgroundColor: "#fff",
     margin: 20,
     marginTop: -20,
     borderRadius: 20,
     padding: 25,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
     elevation: 8,
   },
   formTitle: {
@@ -370,12 +332,10 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   highlightText: { color: "#4CAF50", fontWeight: "bold" },
-
   inputContainer: { marginBottom: 15 },
   input: { backgroundColor: "#fff" },
   helperText: { marginTop: 5 },
   errorText: { textAlign: "center", marginBottom: 15, fontSize: 14 },
-
   actionButton: {
     backgroundColor: "#4CAF50",
     paddingVertical: 8,
@@ -384,7 +344,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   buttonLabel: { fontSize: 16, fontWeight: "bold" },
-
   progressContainer: { alignItems: "center" },
   progressBar: {
     width: "100%",
@@ -395,7 +354,6 @@ const styles = StyleSheet.create({
   },
   progressFill: { height: "100%", backgroundColor: "#4CAF50", borderRadius: 2 },
   progressText: { fontSize: 12, color: "#666" },
-
   navigationCard: {
     backgroundColor: "#fff",
     marginHorizontal: 20,
@@ -403,18 +361,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 25,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
     elevation: 8,
   },
-  navTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 15,
-  },
+  navTitle: { fontSize: 16, fontWeight: "bold", color: "#333", marginBottom: 15 },
   navButton: {
     backgroundColor: "#E8F5E8",
     paddingHorizontal: 20,
