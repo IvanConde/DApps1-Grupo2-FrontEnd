@@ -1,6 +1,7 @@
 // src/screens/Auth/RegisterScreen.js
 import React, { useState, useRef, useEffect } from "react";
 import { View, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Text,
   TextInput,
@@ -9,6 +10,8 @@ import {
   Snackbar,
 } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { register as registerRequest } from "../../services/auth";
+
 let SecureStore;
 try {
   SecureStore = require("expo-secure-store");
@@ -18,22 +21,10 @@ try {
   );
 }
 
-const storageGet = async (key) => {
-  if (SecureStore && SecureStore.getItemAsync)
-    return await SecureStore.getItemAsync(key);
-  return await AsyncStorage.getItem(key);
-};
 const storageSet = async (key, value) => {
-  if (SecureStore && SecureStore.setItemAsync)
-    return await SecureStore.setItemAsync(key, value);
+  if (SecureStore?.setItemAsync) return await SecureStore.setItemAsync(key, value);
   return await AsyncStorage.setItem(key, value);
 };
-const storageRemove = async (key) => {
-  if (SecureStore && SecureStore.deleteItemAsync)
-    return await SecureStore.deleteItemAsync(key);
-  return await AsyncStorage.removeItem(key);
-};
-import { register as registerRequest } from "../../services/auth";
 
 export default function RegisterScreen({ navigation }) {
   const [name, setName] = useState("");
@@ -44,10 +35,10 @@ export default function RegisterScreen({ navigation }) {
   const [showPassword2, setShowPassword2] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const pass2Ref = useRef(null);
-
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMsg, setSnackbarMsg] = useState("");
+
+  const pass2Ref = useRef(null);
 
   const emailInvalid = email.length > 0 && !/^\S+@\S+\.\S+$/.test(email.trim());
   const passwordTooShort = password.length > 0 && password.length < 6;
@@ -62,11 +53,10 @@ export default function RegisterScreen({ navigation }) {
       }, 2000);
     }
     return () => clearTimeout(t);
-  }, [snackbarVisible, navigation]);
+  }, [snackbarVisible]);
 
   const handleRegister = async () => {
     setErrorMsg("");
-
     if (!name || !email || !password || !password2)
       return setErrorMsg("Completá todos los campos.");
     if (emailInvalid) return setErrorMsg("El email no es válido.");
@@ -105,8 +95,13 @@ export default function RegisterScreen({ navigation }) {
   const goToLogin = () => navigation.navigate("Login");
 
   return (
-    <>
-      <ScrollView style={styles.container}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
+
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
           <Text style={styles.headerIcon}>🌟</Text>
           <Text variant="headlineMedium" style={styles.title}>
@@ -120,105 +115,79 @@ export default function RegisterScreen({ navigation }) {
         <View style={styles.formCard}>
           <Text style={styles.formTitle}>Crear Cuenta</Text>
 
-          <View style={styles.inputContainer}>
-            <TextInput
-              label="👤 Nombre completo"
-              mode="outlined"
-              value={name}
-              onChangeText={setName}
-              style={styles.input}
-              outlineColor="#E0E0E0"
-              activeOutlineColor="#4CAF50"
-            />
-          </View>
+          <TextInput
+            label="👤 Nombre completo"
+            mode="outlined"
+            value={name}
+            onChangeText={setName}
+            style={styles.input}
+            outlineColor="#E0E0E0"
+            activeOutlineColor="#4CAF50"
+          />
 
-          <View style={styles.inputContainer}>
-            <TextInput
-              label="📧 Email"
-              mode="outlined"
-              autoCapitalize="none"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-              style={styles.input}
-              outlineColor="#E0E0E0"
-              activeOutlineColor="#4CAF50"
-            />
-            {emailInvalid && (
-              <HelperText
-                type="error"
-                visible={emailInvalid}
-                style={styles.helperText}
-              >
-                Ingresá un email válido.
-              </HelperText>
-            )}
-          </View>
+          <TextInput
+            label="📧 Email"
+            mode="outlined"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+            style={styles.input}
+            outlineColor="#E0E0E0"
+            activeOutlineColor="#4CAF50"
+          />
+          {emailInvalid && (
+            <HelperText type="error" visible={emailInvalid}>
+              Ingresá un email válido.
+            </HelperText>
+          )}
 
-          <View style={styles.inputContainer}>
-            <TextInput
-              label="🔒 Contraseña"
-              mode="outlined"
-              secureTextEntry={!showPassword}
-              value={password}
-              onChangeText={setPassword}
-              style={styles.input}
-              outlineColor="#E0E0E0"
-              activeOutlineColor="#4CAF50"
-              right={
-                <TextInput.Icon
-                  icon={showPassword ? "eye-off" : "eye"}
-                  onPress={() => setShowPassword((p) => !p)}
-                  forceTextInputFocus={false}
-                  accessibilityLabel={
-                    showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
-                  }
-                />
-              }
-            />
-            {passwordTooShort && (
-              <HelperText
-                type="error"
-                visible={passwordTooShort}
-                style={styles.helperText}
-              >
-                Debe tener al menos 6 caracteres.
-              </HelperText>
-            )}
-          </View>
+          <TextInput
+            label="🔒 Contraseña"
+            mode="outlined"
+            secureTextEntry={!showPassword}
+            value={password}
+            onChangeText={setPassword}
+            style={styles.input}
+            outlineColor="#E0E0E0"
+            activeOutlineColor="#4CAF50"
+            right={
+              <TextInput.Icon
+                icon={showPassword ? "eye-off" : "eye"}
+                onPress={() => setShowPassword(!showPassword)}
+                forceTextInputFocus={false}
+              />
+            }
+          />
+          {passwordTooShort && (
+            <HelperText type="error" visible={passwordTooShort}>
+              Debe tener al menos 6 caracteres.
+            </HelperText>
+          )}
 
-          <View style={styles.inputContainer}>
-            <TextInput
-              ref={pass2Ref}
-              label="🔐 Confirmar contraseña"
-              mode="outlined"
-              secureTextEntry={!showPassword2}
-              value={password2}
-              onChangeText={setPassword2}
-              style={styles.input}
-              outlineColor="#E0E0E0"
-              activeOutlineColor="#4CAF50"
-              right={
-                <TextInput.Icon
-                  icon={showPassword2 ? "eye-off" : "eye"}
-                  onPress={() => setShowPassword2((p) => !p)}
-                  forceTextInputFocus={false}
-                  accessibilityLabel={
-                    showPassword2 ? "Ocultar contraseña" : "Mostrar contraseña"
-                  }
-                />
-              }
-            />
-            {passwordsDontMatch && (
-              <HelperText
-                type="error"
-                visible={passwordsDontMatch}
-                style={styles.helperText}
-              >
-                Las contraseñas no coinciden.
-              </HelperText>
-            )}
-          </View>
+          <TextInput
+            ref={pass2Ref}
+            label="🔐 Confirmar contraseña"
+            mode="outlined"
+            secureTextEntry={!showPassword2}
+            value={password2}
+            onChangeText={setPassword2}
+            style={styles.input}
+            outlineColor="#E0E0E0"
+            activeOutlineColor="#4CAF50"
+            right={
+              <TextInput.Icon
+                icon={showPassword2 ? "eye-off" : "eye"}
+                onPress={() => setShowPassword2(!showPassword2)}
+                forceTextInputFocus={false}
+              />
+            }
+          />
+          {passwordsDontMatch && (
+            <HelperText type="error" visible={passwordsDontMatch}>
+              Las contraseñas no coinciden.
+            </HelperText>
+          )}
 
           {!!errorMsg && (
             <HelperText type="error" visible style={styles.errorText}>
@@ -237,12 +206,10 @@ export default function RegisterScreen({ navigation }) {
             ✨ Crear mi cuenta
           </Button>
 
-          <View style={styles.infoContainer}>
-            <Text style={styles.infoText}>
-              Al registrarte aceptas nuestros términos de uso y política de
-              privacidad
-            </Text>
-          </View>
+          <Text style={styles.infoText}>
+            Al registrarte aceptas nuestros términos de uso y política de
+            privacidad
+          </Text>
         </View>
 
         <View style={styles.loginCard}>
@@ -258,28 +225,23 @@ export default function RegisterScreen({ navigation }) {
 
       <Snackbar
         visible={snackbarVisible}
-        onDismiss={() => {
-          setSnackbarVisible(false);
-          navigation.goBack();
-        }}
+        onDismiss={() => setSnackbarVisible(false)}
         duration={2000}
         action={{
           label: "Iniciar sesión",
-          onPress: () => {
-            setSnackbarVisible(false);
-            navigation.goBack();
-          },
+          onPress: goToLogin,
         }}
         style={styles.snackbar}
       >
         {snackbarMsg}
       </Snackbar>
-    </>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f5f5" },
+  safeArea: { flex: 1, backgroundColor: "#f5f5f5" },
+  container: { flex: 1 },
   header: {
     backgroundColor: "#4CAF50",
     paddingTop: 60,
@@ -301,46 +263,29 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 16,
   },
-
   formCard: {
     backgroundColor: "#fff",
     margin: 20,
     marginTop: -20,
     borderRadius: 20,
     padding: 25,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
     elevation: 8,
   },
-  formTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#333",
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  inputContainer: { marginBottom: 15 },
-  input: { backgroundColor: "#fff" },
-  helperText: { marginTop: 5 },
+  input: { backgroundColor: "#fff", marginBottom: 10 },
   errorText: { textAlign: "center", marginBottom: 15, fontSize: 14 },
   registerButton: {
     backgroundColor: "#4CAF50",
-    paddingVertical: 8,
     borderRadius: 12,
     marginTop: 10,
     marginBottom: 15,
   },
   buttonLabel: { fontSize: 16, fontWeight: "bold" },
-  infoContainer: { marginTop: 10 },
   infoText: {
     fontSize: 12,
     color: "#666",
     textAlign: "center",
     lineHeight: 16,
   },
-
   loginCard: {
     backgroundColor: "#fff",
     marginHorizontal: 20,
@@ -348,10 +293,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 25,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
     elevation: 8,
   },
   loginTitle: {
@@ -375,6 +316,5 @@ const styles = StyleSheet.create({
     borderColor: "#4CAF50",
   },
   loginButtonText: { color: "#4CAF50", fontSize: 16, fontWeight: "bold" },
-
   snackbar: { backgroundColor: "#2e7d32" },
 });

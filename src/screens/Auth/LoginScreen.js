@@ -7,8 +7,12 @@ import {
   ScrollView,
   StyleSheet,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, TextInput, Button, HelperText } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as LocalAuthentication from "expo-local-authentication";
+import { login as loginRequest, me as meRequest } from "../../services/auth";
+
 let SecureStore;
 try {
   SecureStore = require("expo-secure-store");
@@ -19,22 +23,17 @@ try {
 }
 
 const storageGet = async (key) => {
-  if (SecureStore && SecureStore.getItemAsync)
-    return await SecureStore.getItemAsync(key);
+  if (SecureStore?.getItemAsync) return await SecureStore.getItemAsync(key);
   return await AsyncStorage.getItem(key);
 };
 const storageSet = async (key, value) => {
-  if (SecureStore && SecureStore.setItemAsync)
-    return await SecureStore.setItemAsync(key, value);
+  if (SecureStore?.setItemAsync) return await SecureStore.setItemAsync(key, value);
   return await AsyncStorage.setItem(key, value);
 };
 const storageRemove = async (key) => {
-  if (SecureStore && SecureStore.deleteItemAsync)
-    return await SecureStore.deleteItemAsync(key);
+  if (SecureStore?.deleteItemAsync) return await SecureStore.deleteItemAsync(key);
   return await AsyncStorage.removeItem(key);
 };
-import * as LocalAuthentication from "expo-local-authentication";
-import { login as loginRequest, me as meRequest } from "../../services/auth";
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
@@ -134,21 +133,26 @@ export default function LoginScreen({ navigation }) {
   const goToRegister = () => navigation.navigate("Register");
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerIcon}>🏃‍♀️</Text>
-        <Text variant="headlineMedium" style={styles.title}>
-          Bienvenido a RitmoFit
-        </Text>
-        <Text style={styles.subtitle}>
-          Tu entrenamiento ideal te está esperando
-        </Text>
-      </View>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
 
-      <View style={styles.formCard}>
-        <Text style={styles.formTitle}>Iniciar Sesión</Text>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: 50 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <Text style={styles.headerIcon}>🏃‍♀️</Text>
+          <Text variant="headlineMedium" style={styles.title}>
+            Bienvenido a RitmoFit
+          </Text>
+          <Text style={styles.subtitle}>
+            Tu entrenamiento ideal te está esperando
+          </Text>
+        </View>
 
-        <View style={styles.inputContainer}>
+        <View style={styles.formCard}>
+          <Text style={styles.formTitle}>Iniciar Sesión</Text>
+
           <TextInput
             label="📧 Email"
             mode="outlined"
@@ -161,17 +165,11 @@ export default function LoginScreen({ navigation }) {
             activeOutlineColor="#4CAF50"
           />
           {emailIsInvalid && (
-            <HelperText
-              type="error"
-              visible={emailIsInvalid}
-              style={styles.errorText}
-            >
+            <HelperText type="error" visible={emailIsInvalid}>
               Ingresá un email válido.
             </HelperText>
           )}
-        </View>
 
-        <View style={styles.inputContainer}>
           <TextInput
             ref={passwordRef}
             label="🔒 Contraseña"
@@ -187,70 +185,68 @@ export default function LoginScreen({ navigation }) {
                 icon={showPassword ? "eye-off" : "eye"}
                 onPress={() => setShowPassword((p) => !p)}
                 forceTextInputFocus={false}
-                accessibilityLabel={
-                  showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
-                }
               />
             }
           />
+
+          {!!errorMsg && (
+            <HelperText type="error" visible style={styles.errorText}>
+              {errorMsg}
+            </HelperText>
+          )}
+
+          <Button
+            mode="contained"
+            onPress={handleLogin}
+            loading={submitting}
+            disabled={submitting}
+            style={styles.loginButton}
+            labelStyle={styles.buttonLabel}
+          >
+            🚀 Iniciar sesión
+          </Button>
+
+          {biometricAvailable && (
+            <Button
+              mode="outlined"
+              icon="fingerprint"
+              onPress={handleBiometricLogin}
+              style={styles.biometricButton}
+              labelStyle={styles.biometricButtonLabel}
+            >
+              👆 Ingresar con biometría
+            </Button>
+          )}
         </View>
 
-        {!!errorMsg && (
-          <HelperText type="error" visible style={styles.errorText}>
-            {errorMsg}
-          </HelperText>
-        )}
+        <View style={styles.navigationCard}>
+          <Text style={styles.navTitle}>¿Necesitas ayuda?</Text>
+          <TouchableOpacity onPress={goToForgot} style={styles.navButton}>
+            <Text style={styles.navButtonText}>🔑 ¿Olvidaste tu contraseña?</Text>
+          </TouchableOpacity>
 
-        <Button
-          mode="contained"
-          onPress={handleLogin}
-          loading={submitting}
-          disabled={submitting}
-          style={styles.loginButton}
-          labelStyle={styles.buttonLabel}
-        >
-          🚀 Iniciar sesión
-        </Button>
+          <View style={styles.divider} />
 
-        {biometricAvailable && (
-          <Button
-            mode="outlined"
-            icon="fingerprint"
-            onPress={handleBiometricLogin}
-            style={styles.biometricButton}
-            labelStyle={styles.biometricButtonLabel}
-          >
-            👆 Ingresar con biometría
-          </Button>
-        )}
-      </View>
-
-      <View style={styles.navigationCard}>
-        <Text style={styles.navTitle}>¿Necesitas ayuda?</Text>
-        <TouchableOpacity onPress={goToForgot} style={styles.navButton}>
-          <Text style={styles.navButtonText}>🔑 ¿Olvidaste tu contraseña?</Text>
-        </TouchableOpacity>
-
-        <View style={styles.divider} />
-
-        <Text style={styles.newUserText}>¿Nuevo en RitmoFit?</Text>
-        <TouchableOpacity onPress={goToRegister} style={styles.registerButton}>
-          <Text style={styles.registerButtonText}>✨ Crear cuenta nueva</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+          <Text style={styles.newUserText}>¿Nuevo en RitmoFit?</Text>
+          <TouchableOpacity onPress={goToRegister} style={styles.registerButton}>
+            <Text style={styles.registerButtonText}>✨ Crear cuenta nueva</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f5f5" },
+  safeArea: { flex: 1, backgroundColor: "#f5f5f5" },
+  container: { flex: 1 },
   header: {
     backgroundColor: "#4CAF50",
-    paddingTop: 50,
-    paddingBottom: 30,
+    paddingTop: 60,
+    paddingBottom: 40,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
     alignItems: "center",
   },
   headerIcon: { fontSize: 48, marginBottom: 10 },
@@ -265,58 +261,45 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 16,
   },
-
   formCard: {
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
     margin: 20,
-    marginTop: -10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginTop: -20,
+    borderRadius: 20,
+    padding: 25,
+    elevation: 8,
   },
   formTitle: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: "bold",
     color: "#333",
     textAlign: "center",
     marginBottom: 20,
   },
-  inputContainer: { marginBottom: 15 },
-  input: { backgroundColor: "#fff" },
-  errorText: { marginTop: 5 },
-
+  input: { backgroundColor: "#fff", marginBottom: 10 },
+  errorText: { textAlign: "center", marginBottom: 10, fontSize: 14 },
   loginButton: {
     backgroundColor: "#4CAF50",
+    borderRadius: 12,
     marginTop: 10,
     marginBottom: 15,
-    paddingVertical: 5,
   },
-  buttonLabel: { fontSize: 16, fontWeight: "600" },
-
+  buttonLabel: { fontSize: 16, fontWeight: "bold" },
   biometricButton: { borderColor: "#4CAF50", marginBottom: 10 },
   biometricButtonLabel: { color: "#4CAF50", fontSize: 14 },
-
   navigationCard: {
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
-    margin: 20,
-    marginTop: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 20,
+    padding: 25,
+    alignItems: "center",
+    elevation: 8,
   },
   navTitle: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#333",
-    textAlign: "center",
     marginBottom: 15,
   },
   navButton: {

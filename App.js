@@ -1,5 +1,6 @@
 // App.js
 import React, { useEffect } from "react";
+import {SafeAreaProvider} from "react-native-safe-area-context";
 import { Provider as PaperProvider } from "react-native-paper";
 import { NavigationContainer } from "@react-navigation/native";
 import AppNavigator from "./src/navigation/AppNavigator";
@@ -36,9 +37,11 @@ export default function App() {
 
   return (
     <PaperProvider>
+      <SafeAreaProvider>
       <NavigationContainer>
         <AppNavigator />
       </NavigationContainer>
+      </SafeAreaProvider>
     </PaperProvider>
   );
 }
