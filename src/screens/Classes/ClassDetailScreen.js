@@ -119,7 +119,7 @@ const confirmReservation = async () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
+      <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'top', 'bottom']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4CAF50" />
           <Text style={styles.loadingText}>Cargando detalle...</Text>
@@ -130,7 +130,7 @@ const confirmReservation = async () => {
 
   if (!classData) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
+      <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'top', 'bottom']}>
         <View style={styles.errorContainer}>
         <Text style={styles.errorText}>No se encontró la clase</Text>
         <TouchableOpacity
@@ -147,8 +147,8 @@ const confirmReservation = async () => {
   const disciplineColor = getDisciplineColor(classData.discipline);
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'top', 'bottom']}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       {/* Header con degradado */}
       <View style={[styles.header, { backgroundColor: disciplineColor }]}>
         <View style={styles.headerContent}>
@@ -353,6 +353,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
   loadingContainer: {
     flex: 1,

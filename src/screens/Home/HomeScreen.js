@@ -114,8 +114,8 @@ export default function HomeScreen({ navigation }) {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
-      <ScrollView style={styles.container}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'top', 'bottom']}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text variant="headlineMedium" style={styles.title}>
             🎉 Bienvenido a RitmoFit
@@ -229,10 +229,13 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#f5f5f5' },
+  safeArea: { flex: 1, backgroundColor: '#4CAF50' },
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
   header: {
     backgroundColor: '#4CAF50',
