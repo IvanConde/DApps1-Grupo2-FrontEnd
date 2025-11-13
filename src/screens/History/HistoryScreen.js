@@ -11,6 +11,7 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
 import { getHistory } from '../../services/history';
 
@@ -371,25 +372,28 @@ const HistoryScreen = ({ navigation }) => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4CAF50" />
-        <Text style={styles.loadingText}>Cargando historial...</Text>
-      </View>
+      <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>Cargando historial...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header verde */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Historial de Asistencias</Text>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setShowFilters(true)}
-        >
-          <Text style={styles.filterButtonText}>🔍 Filtros</Text>
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
+      <View style={styles.container}>
+        {/* Header verde */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Historial de Asistencias</Text>
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setShowFilters(true)}
+          >
+            <Text style={styles.filterButtonText}>🔍 Filtros</Text>
+          </TouchableOpacity>
+        </View>
 
       {history.length === 0 ? (
         <View style={styles.emptyContainer}>
@@ -435,10 +439,12 @@ const HistoryScreen = ({ navigation }) => {
 
       <FiltersModal />
     </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: '#f5f5f5' },
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',

@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   ActivityIndicator, Alert, RefreshControl
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getMyReservations, cancelReservation } from '../../services/reservations';
 
 const ClassUser = ({ navigation }) => {
@@ -149,18 +150,21 @@ const ClassUser = ({ navigation }) => {
 
   if (loading) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#4CAF50" />
-        <Text style={{ marginTop: 10, color: '#666' }}>Cargando...</Text>
-      </View>
+      <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={{ marginTop: 10, color: '#666' }}>Cargando...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Mis reservas</Text>
-      </View>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Mis reservas</Text>
+        </View>
 
       {reservations.length === 0 ? (
         <View style={styles.empty}>
@@ -190,10 +194,12 @@ const ClassUser = ({ navigation }) => {
         <Text style={styles.backButtonText}>Volver</Text>
       </TouchableOpacity>
     </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: '#f5f5f5' },
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   header: { backgroundColor: '#4CAF50', paddingTop: 50, paddingBottom: 16, paddingHorizontal: 16 },
   title: { color: '#fff', fontSize: 20, fontWeight: 'bold' },

@@ -12,6 +12,7 @@ import {
   ScrollView,
   Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import { getClasses, getDisciplines, getSedes } from "../../services/classes";
@@ -440,66 +441,69 @@ const ClassesScreen = ({ navigation }) => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4CAF50" />
-        <Text style={styles.loadingText}>Cargando clases...</Text>
-      </View>
+      <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>Cargando clases...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Catálogo de Clases</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={styles.filterButton}
-            onPress={() => setShowFilters(true)}
-          >
-            <Text style={styles.filterButtonText}>🔍 Filtros</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {filteredClasses.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
-            {classes.length === 0
-              ? "No hay clases disponibles"
-              : "No hay clases que coincidan con los filtros"}
-          </Text>
-          {classes.length > 0 && (
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Catálogo de Clases</Text>
+          <View style={styles.headerActions}>
             <TouchableOpacity
-              style={styles.clearFiltersButton}
-              onPress={clearFilters}
+              style={styles.filterButton}
+              onPress={() => setShowFilters(true)}
             >
-              <Text style={styles.clearFiltersButtonText}>Limpiar Filtros</Text>
+              <Text style={styles.filterButtonText}>🔍 Filtros</Text>
             </TouchableOpacity>
-          )}
-        </View>
-      ) : (
-        <>
-          <View style={styles.resultsHeader}>
-            <Text style={styles.resultsText}>
-              {filteredClasses.length} clase
-              {filteredClasses.length !== 1 ? "s" : ""} encontrada
-              {filteredClasses.length !== 1 ? "s" : ""}
-            </Text>
           </View>
+        </View>
 
-          <FlatList
-            data={filteredClasses}
-            renderItem={renderClassItem}
-            keyExtractor={(item) => item.id.toString()}
-            style={styles.list}
-            contentContainerStyle={[styles.listContent, { paddingBottom: 100 }]}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-            showsVerticalScrollIndicator={false}
-          />
-        </>
-      )}
+        {filteredClasses.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>
+              {classes.length === 0
+                ? "No hay clases disponibles"
+                : "No hay clases que coincidan con los filtros"}
+            </Text>
+            {classes.length > 0 && (
+              <TouchableOpacity
+                style={styles.clearFiltersButton}
+                onPress={clearFilters}
+              >
+                <Text style={styles.clearFiltersButtonText}>Limpiar Filtros</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : (
+          <>
+            <View style={styles.resultsHeader}>
+              <Text style={styles.resultsText}>
+                {filteredClasses.length} clase
+                {filteredClasses.length !== 1 ? "s" : ""} encontrada
+                {filteredClasses.length !== 1 ? "s" : ""}
+              </Text>
+            </View>
+
+            <FlatList
+              data={filteredClasses}
+              renderItem={renderClassItem}
+              keyExtractor={(item) => item.id.toString()}
+              style={styles.list}
+              contentContainerStyle={[styles.listContent, { paddingBottom: 100 }]}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
+              showsVerticalScrollIndicator={false}
+            />
+          </>
+        )}
 
       {/* Botón volver al final */}
       <TouchableOpacity
@@ -511,10 +515,12 @@ const ClassesScreen = ({ navigation }) => {
 
       <FiltersModal />
     </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: '#f5f5f5' },
   container: { flex: 1, backgroundColor: "#f5f5f5" },
   loadingContainer: {
     flex: 1,

@@ -10,6 +10,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { getProfile, updateProfile } from '../../services/user';
 import { uploadProfileImage } from '../../services/cloudinary';
@@ -156,26 +157,29 @@ const ProfileScreen = ({ navigation }) => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007bff" />
-        <Text style={styles.loadingText}>Cargando perfil...</Text>
-      </View>
+      <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007bff" />
+          <Text style={styles.loadingText}>Cargando perfil...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header verde consistente */}
-      <View style={styles.greenHeader}>
-        <Text style={styles.greenHeaderTitle}>Mi Perfil</Text>
-      </View>
-      
-      <ScrollView style={styles.scrollContainer}>
-        <View style={styles.content}>
-          {/* Subtitle */}
-          <View style={styles.header}>
-            <Text style={styles.subtitle}>Edita tu información personal</Text>
-          </View>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
+      <View style={styles.container}>
+        {/* Header verde consistente */}
+        <View style={styles.greenHeader}>
+          <Text style={styles.greenHeaderTitle}>Mi Perfil</Text>
+        </View>
+        
+        <ScrollView style={styles.scrollContainer}>
+          <View style={styles.content}>
+            {/* Subtitle */}
+            <View style={styles.header}>
+              <Text style={styles.subtitle}>Edita tu información personal</Text>
+            </View>
 
         {/* Foto de perfil */}
         <View style={styles.photoSection}>
@@ -266,10 +270,12 @@ const ProfileScreen = ({ navigation }) => {
         </View>
       </ScrollView>
     </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: '#f5f5f5' },
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',

@@ -11,6 +11,7 @@ import {
   Alert,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getClassById } from '../../services/classes';
 
 const ClassDetailScreen = ({ route, navigation }) => {
@@ -117,16 +118,19 @@ const confirmReservation = async () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4CAF50" />
-        <Text style={styles.loadingText}>Cargando detalle...</Text>
-      </View>
+      <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>Cargando detalle...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (!classData) {
     return (
-      <View style={styles.errorContainer}>
+      <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
+        <View style={styles.errorContainer}>
         <Text style={styles.errorText}>No se encontró la clase</Text>
         <TouchableOpacity
           style={styles.backButton}
@@ -135,13 +139,14 @@ const confirmReservation = async () => {
           <Text style={styles.backButtonText}>Volver</Text>
         </TouchableOpacity>
       </View>
+      </SafeAreaView>
     );
   }
 
   const disciplineColor = getDisciplineColor(classData.discipline);
 
   return (
-    
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
     <ScrollView style={styles.container}>
       {/* Header con degradado */}
       <View style={[styles.header, { backgroundColor: disciplineColor }]}>
@@ -338,11 +343,12 @@ const confirmReservation = async () => {
       </View>
     </Modal>
     </ScrollView>
-    
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: '#f5f5f5' },
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',

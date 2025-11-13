@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert 
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, Button } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 let SecureStore;
@@ -113,15 +114,16 @@ export default function HomeScreen({ navigation }) {
   );
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text variant="headlineMedium" style={styles.title}>
-          🎉 Bienvenido a RitmoFit
-        </Text>
-        <Text style={styles.subtitle}>
-          ¡Encuentra tu clase perfecta!
-        </Text>
-      </View>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
+      <ScrollView style={styles.container}>
+        <View style={styles.header}>
+          <Text variant="headlineMedium" style={styles.title}>
+            🎉 Bienvenido a RitmoFit
+          </Text>
+          <Text style={styles.subtitle}>
+            ¡Encuentra tu clase perfecta!
+          </Text>
+        </View>
 
       {/* Clases de hoy */}
       <View style={styles.section}>
@@ -222,10 +224,12 @@ export default function HomeScreen({ navigation }) {
         </Button>
       </View>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: '#f5f5f5' },
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',

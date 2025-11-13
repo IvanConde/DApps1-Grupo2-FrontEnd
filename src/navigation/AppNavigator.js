@@ -20,7 +20,10 @@ export default function AppNavigator() {
       <Stack.Screen
         name="Login"
         component={LoginScreen}
-        options={{ title: "Iniciar sesión" }}
+        options={{ 
+          title: "Iniciar sesión",
+          headerBackVisible: false 
+        }}
       />
       <Stack.Screen
         name="ForgotPassword"
