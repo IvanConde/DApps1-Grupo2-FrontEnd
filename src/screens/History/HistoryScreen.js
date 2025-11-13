@@ -15,6 +15,25 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
 import { getHistory } from '../../services/history';
 
+// Helpers para parsear y formatear YYYY-MM-DD sin introducir desplazamientos de zona horaria
+const parseYMD = (dateString) => {
+  // dateString expected: 'YYYY-MM-DD'
+  if (!dateString) return null;
+  const parts = dateString.split('-');
+  const y = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10) - 1; // monthIndex
+  const d = parseInt(parts[2], 10);
+  return new Date(y, m, d);
+};
+
+const formatYMD = (date) => {
+  if (!date) return '';
+  const y = date.getFullYear();
+  const m = `${date.getMonth() + 1}`.padStart(2, '0');
+  const d = `${date.getDate()}`.padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
 const HistoryScreen = ({ navigation }) => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,7 +86,6 @@ const HistoryScreen = ({ navigation }) => {
         newFilters.to = '';
       }
       setFilters(newFilters);
-      updateSelectedDates(newFilters);
     } else if (selectingDate === 'to') {
       const newFilters = { ...filters, to: dateStr };
       // Si la fecha "hasta" es anterior a la fecha "desde", limpiar "desde"
@@ -75,11 +93,11 @@ const HistoryScreen = ({ navigation }) => {
         newFilters.from = '';
       }
       setFilters(newFilters);
-      updateSelectedDates(newFilters);
     }
   };
 
   const updateSelectedDates = (currentFilters) => {
+    try {
     const dates = {};
     
     if (currentFilters.from) {
@@ -102,11 +120,12 @@ const HistoryScreen = ({ navigation }) => {
     
     // Marcar días entre las fechas seleccionadas
     if (currentFilters.from && currentFilters.to) {
-      const start = new Date(currentFilters.from);
-      const end = new Date(currentFilters.to);
-      
+      // Usar parseYMD/formatYMD para evitar desplazamientos por timezone
+      const start = parseYMD(currentFilters.from);
+      const end = parseYMD(currentFilters.to);
+
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const dateStr = d.toISOString().split('T')[0];
+        const dateStr = formatYMD(d);
         if (dateStr !== currentFilters.from && dateStr !== currentFilters.to) {
           dates[dateStr] = {
             selected: true,
@@ -115,8 +134,8 @@ const HistoryScreen = ({ navigation }) => {
           };
         }
       }
-      
-      // Actualizar estilos de inicio y fin
+
+      // Actualizar estilos de inicio y fin (asegurarse usar las keys originales)
       dates[currentFilters.from] = {
         selected: true,
         startingDay: true,
@@ -132,6 +151,10 @@ const HistoryScreen = ({ navigation }) => {
     }
     
     setSelectedDates(dates);
+    } catch (err) {
+      console.warn('Error updating selected dates:', err);
+      setSelectedDates({});
+    }
   };
 
   const applyDateFilters = async () => {
@@ -148,7 +171,8 @@ const HistoryScreen = ({ navigation }) => {
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
+    const date = parseYMD(dateString);
+    if (!date) return '';
     return date.toLocaleDateString('es-AR', {
       weekday: 'short',
       year: 'numeric',
@@ -159,7 +183,8 @@ const HistoryScreen = ({ navigation }) => {
 
   const formatDateShort = (dateString) => {
     if (!dateString) return 'Seleccionar';
-    const date = new Date(dateString);
+    const date = parseYMD(dateString);
+    if (!date) return 'Seleccionar';
     return date.toLocaleDateString('es-AR', {
       day: '2-digit',
       month: '2-digit',
