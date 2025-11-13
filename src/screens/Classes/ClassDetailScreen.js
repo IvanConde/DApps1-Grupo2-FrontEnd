@@ -53,11 +53,11 @@ const ClassDetailScreen = ({ route, navigation }) => {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
+    // Usar formato corto para evitar textos muy largos que rompan el layout
     return date.toLocaleDateString('es-AR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short'
     });
   };
 
@@ -427,11 +427,13 @@ const styles = StyleSheet.create({
   },
   dateTimeContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     marginBottom: 20,
   },
   dateTimeItem: {
     alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 6,
   },
   dateTimeLabel: {
     fontSize: 14,
@@ -443,6 +445,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
+    flexShrink: 1,
+    flexWrap: 'wrap'
   },
   cupoContainer: {
     flexDirection: 'row',
