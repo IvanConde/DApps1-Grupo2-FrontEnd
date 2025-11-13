@@ -57,7 +57,8 @@ const ClassDetailScreen = ({ route, navigation }) => {
     return date.toLocaleDateString('es-AR', {
       weekday: 'short',
       day: '2-digit',
-      month: 'short'
+      month: 'short',
+      year: 'numeric',
     });
   };
 

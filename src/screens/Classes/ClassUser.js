@@ -50,11 +50,21 @@ const ClassUser = ({ navigation }) => {
         console.warn('Clase sin fecha u hora:', item);
         return false;
         }
-        const classDate = new Date(fechaClaseISO);
+        
+        // Extraer solo la fecha (YYYY-MM-DD) del string ISO
+        const fechaOnly = fechaClaseISO.split('T')[0];
+        // Extraer solo HH:MM del horaClase (por si viene con segundos)
+        const horaOnly = horaClase.substring(0, 5);
+        
+        // Parseamos fecha y hora juntas para crear el datetime correcto (sin zona horaria)
+        const classDateTime = new Date(`${fechaOnly}T${horaOnly}:00`);
         const now = new Date();
 
-        console.log('Comparando clase:', classDate.toString(), '- Ahora:', now.toString());
-        return classDate.getTime() > now.getTime();
+        // Calcular el límite de cancelación: 2 horas antes de la clase
+        const twoHoursBefore = new Date(classDateTime.getTime() - 2 * 60 * 60 * 1000);
+
+        // Se puede cancelar si ahora estamos ANTES del límite de 2 horas
+        return now.getTime() < twoHoursBefore.getTime();
     } catch (err) {
         console.error('Error parseando fecha/hora:', err);
         return false;
@@ -132,7 +142,7 @@ const ClassUser = ({ navigation }) => {
       ) : (
         <View style={styles.disabledBtn}>
           <Text style={styles.disabledTxt}>
-            {item.status !== 'confirmada' ? 'No cancelable' : 'Clase vencida'}
+            {item.status !== 'confirmada' ? 'No cancelable' : 'No es posible cancelar esta clase'}
           </Text>
         </View>
       )}
