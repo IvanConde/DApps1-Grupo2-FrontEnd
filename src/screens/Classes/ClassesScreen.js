@@ -17,6 +17,16 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import { getClasses, getDisciplines, getSedes } from "../../services/classes";
 
+// Helper para parsear fechas YYYY-MM-DD sin desplazamiento de zona horaria
+const parseYMD = (dateString) => {
+  if (!dateString) return null;
+  const parts = String(dateString).slice(0, 10).split('-');
+  const y = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10) - 1;
+  const d = parseInt(parts[2], 10);
+  return new Date(y, m, d);
+};
+
 const ClassesScreen = ({ navigation }) => {
   const [classes, setClasses] = useState([]);
   const [filteredClasses, setFilteredClasses] = useState([]);
@@ -133,10 +143,10 @@ const ClassesScreen = ({ navigation }) => {
     setFilters((prev) => ({ ...prev, fechaDesde: null, fechaHasta: null }));
   };
 
-  const formatDateHuman = (d) => {
-    if (!d) return "";
-    const date = d instanceof Date ? d : new Date(String(d).slice(0, 10));
-    if (isNaN(date.getTime())) return "";
+  const formatDateHuman = (dateString) => {
+    if (!dateString) return "";
+    const date = parseYMD(dateString);
+    if (!date || isNaN(date.getTime())) return "";
     return date.toLocaleDateString("es-AR", {
       weekday: "short",
       day: "numeric",
