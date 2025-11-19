@@ -84,6 +84,10 @@ export default function HomeScreen({ navigation }) {
     navigation.navigate('History');
   };
 
+  const handleGoToNews = () => {
+    navigation.navigate('News');
+  };
+
   const getDisciplineIcon = (discipline) => {
     switch (discipline?.toLowerCase()) {
       case 'funcional': return '💪';
@@ -197,6 +201,17 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.actionInfo}>
             <Text style={styles.actionTitle}>Mi Historial</Text>
             <Text style={styles.actionSubtitle}>Revisa tus clases pasadas</Text>
+          </View>
+          <Text style={styles.actionArrow}>›</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionCard}
+          onPress={handleGoToNews}
+        >
+          <Text style={styles.actionIcon}>📰</Text>
+          <View style={styles.actionInfo}>
+            <Text style={styles.actionTitle}>Novedades</Text>
+            <Text style={styles.actionSubtitle}>Promociones y eventos</Text>
           </View>
           <Text style={styles.actionArrow}>›</Text>
         </TouchableOpacity>

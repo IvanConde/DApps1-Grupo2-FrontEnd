@@ -6,6 +6,7 @@ import ForgotPasswordScreen from "../screens/Auth/ForgotPasswordScreen";
 import RegisterScreen from "../screens/Auth/RegisterScreen";
 import VerifyOtpScreen from "../screens/Auth/VerifyOtpScreen";
 import HomeScreen from "../screens/Home/HomeScreen";
+import NewsScreen from "../screens/News/NewsScreen";
 import ProfileScreen from "../screens/Profile/ProfileScreen";
 import ClassesScreen from "../screens/Classes/ClassesScreen";
 import ClassDetailScreen from "../screens/Classes/ClassDetailScreen";
@@ -44,6 +45,11 @@ export default function AppNavigator() {
         name="Home"
         component={HomeScreen}
         options={{ headerShown: false }} // sin barra superior
+      />
+      <Stack.Screen
+        name="News"
+        component={NewsScreen}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Profile"
