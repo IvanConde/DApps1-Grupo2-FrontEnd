@@ -76,8 +76,11 @@ export default function LoginScreen({ navigation }) {
     setSubmitting(true);
     try {
       const data = await loginRequest(email.trim(), password);
-      if (data?.user) {
-        navigation.navigate("VerifyOtp", { email });
+      // If login returns token + user, persist and go to Home
+      if (data?.token) await storageSet("token", data.token);
+      if (data?.user) await storageSet("user", JSON.stringify(data.user));
+      if (data?.token) {
+        navigation.replace("Home");
         return;
       }
     } catch (err) {
@@ -88,7 +91,8 @@ export default function LoginScreen({ navigation }) {
         setPassword("");
         requestAnimationFrame(() => passwordRef.current?.focus());
       } else if (status === 403) {
-        navigation.navigate("VerifyOtp", { email });
+        // Previously this redirected to VerifyOtp. Now we show a clear message
+        setErrorMsg(apiMsg || "Tu cuenta requiere verificación. Revisa tu correo para el código.");
       } else {
         setErrorMsg(apiMsg || "Ocurrió un error al iniciar sesión.");
       }

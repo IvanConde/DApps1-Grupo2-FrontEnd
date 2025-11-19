@@ -9,7 +9,7 @@ try {
 }
 
 const api = axios.create({
-  baseURL: "http://192.168.1.9:4000/api", // <- reemplazá TU_IP_LOCAL si hace falta
+  baseURL: "http://192.168.0.20:4000/api", // <- reemplazá TU_IP_LOCAL si hace falta
   timeout: 5000,
 });
 

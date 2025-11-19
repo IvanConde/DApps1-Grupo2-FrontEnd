@@ -75,10 +75,10 @@ export default function RegisterScreen({ navigation }) {
         email: email.trim(),
         password,
       });
-      if (data?.token) await storageSet("token", data.token);
-      if (data?.user) await storageSet("user", JSON.stringify(data.user));
-      setSnackbarMsg("¡Usuario registrado con éxito!");
+      // Don't store token yet. Require OTP verification after registration.
+      setSnackbarMsg("Se envió un código de verificación a tu correo.");
       setSnackbarVisible(true);
+      navigation.replace("VerifyOtp", { email: email.trim() });
     } catch (err) {
       const status = err?.response?.status;
       const apiMsg = err?.response?.data?.message || err?.response?.data?.error;
