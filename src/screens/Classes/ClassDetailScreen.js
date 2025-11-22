@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getClassById } from '../../services/classes';
@@ -112,9 +113,22 @@ const confirmReservation = async () => {
 };
 
 
-  const handleShowLocation = () => {
-    // TODO: Implementar "Cómo llegar" (punto 7)
-    Alert.alert('Próximamente', 'Función de navegación próximamente disponible');
+  const handleShowLocation = async () => {
+    const url = classData?.direccion; // nueva columna con la URL del mapa
+    if (!url) {
+      Alert.alert('Dirección no disponible', 'Esta clase no tiene enlace de ubicación configurado.');
+      return;
+    }
+    try {
+      const can = await Linking.canOpenURL(url);
+      if (!can) {
+        Alert.alert('No se puede abrir', 'Verifica que la URL de la dirección sea válida.');
+        return;
+      }
+      await Linking.openURL(url);
+    } catch (e) {
+      Alert.alert('Error', 'Ocurrió un problema al abrir el mapa.');
+    }
   };
 
   if (loading) {
