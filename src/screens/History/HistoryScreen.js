@@ -249,8 +249,14 @@ const HistoryScreen = ({ navigation }) => {
             <Text style={styles.detailIcon}>⏱️</Text>
             <Text style={styles.detailText}>{item.duracion} min</Text>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: getDisciplineColor(item.discipline) }]}>
-            <Text style={styles.statusText}>Asistida</Text>
+          {/* Badge dinámico según attendance_status */}
+          <View style={[
+            styles.statusBadge, 
+            { backgroundColor: item.attendance_status === 'attended' ? '#4CAF50' : '#FF5722' }
+          ]}>
+            <Text style={styles.statusText}>
+              {item.attendance_status === 'attended' ? '✓ Asistida' : '✗ No Asistida'}
+            </Text>
           </View>
         </View>
       </View>

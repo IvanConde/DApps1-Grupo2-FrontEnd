@@ -35,3 +35,15 @@ export const cancelReservation = async (reservationId) => {
   }
 };
 
+export const confirmAttendance = async (qrData) => {
+  try {
+    const { data } = await client.post('/reservations/confirm-attendance', qrData);
+    return data;
+  } catch (error) {
+    if (error.response) {
+      throw new Error(error.response.data?.error || 'Error confirmando asistencia');
+    }
+    throw new Error('Error de red confirmando asistencia');
+  }
+};
+

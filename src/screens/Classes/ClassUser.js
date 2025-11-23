@@ -69,7 +69,46 @@ const ClassUser = ({ navigation }) => {
         console.error('Error parseando fecha/hora:', err);
         return false;
     }
-    };
+  };
+
+  const canScanQR = (item) => {
+    // Puede escanear QR si:
+    // 1. Está confirmada
+    // 2. No ha escaneado aún (attendance_status === 'pending')
+    // 3. Está en la ventana de tiempo (1h antes hasta 30min después)
+    if (item.status !== 'confirmada' || item.attendance_status !== 'pending') return false;
+
+    try {
+      const fechaClaseISO = item.fecha || item.class?.fecha;
+      const horaClase = item.hora || item.class?.hora;
+
+      if (!fechaClaseISO || !horaClase) return false;
+      
+      const fechaOnly = fechaClaseISO.split('T')[0];
+      const horaOnly = horaClase.substring(0, 5);
+      const classDateTime = new Date(`${fechaOnly}T${horaOnly}:00`);
+      const now = new Date();
+
+      // Ventana: desde 1 hora antes hasta 30 min después
+      const oneHourBefore = new Date(classDateTime.getTime() - 60 * 60 * 1000);
+      const thirtyMinAfter = new Date(classDateTime.getTime() + 30 * 60 * 1000);
+
+      return now >= oneHourBefore && now <= thirtyMinAfter;
+    } catch (err) {
+      console.error('Error validando ventana QR:', err);
+      return false;
+    }
+  };
+
+  const handleScanQR = (item) => {
+    navigation.navigate('QRScanner', {
+      reservationData: {
+        reservation_id: item.reservation_id,
+        class_id: item.id,
+        class_name: item.name,
+      }
+    });
+  };
   const handleCancel = (item) => {
     Alert.alert(
       'Cancelar reserva',
@@ -135,6 +174,24 @@ const ClassUser = ({ navigation }) => {
         </View>
       </TouchableOpacity>
 
+      {/* Botón Escanear QR - Solo si está en ventana de tiempo */}
+      {canScanQR(item) && (
+        <TouchableOpacity 
+          style={styles.scanQRBtn} 
+          onPress={() => handleScanQR(item)}
+        >
+          <Text style={styles.scanQRTxt}>📱 Escanear QR para confirmar asistencia</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Mostrar si ya escaneó */}
+      {item.attendance_status === 'attended' && (
+        <View style={styles.attendedBadge}>
+          <Text style={styles.attendedTxt}>✅ Asistencia confirmada</Text>
+        </View>
+      )}
+
+      {/* Botón Cancelar - Solo si es cancelable */}
       {isCancelable(item) ? (
         <TouchableOpacity style={styles.cancelBtn} onPress={() => handleCancel(item)}>
           <Text style={styles.cancelTxt}>Cancelar reserva</Text>
@@ -230,6 +287,33 @@ const styles = StyleSheet.create({
 
   badge: {
     paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, textTransform: 'capitalize',
+  },
+
+  scanQRBtn: {
+    marginTop: 10, 
+    backgroundColor: '#4CAF50', 
+    paddingVertical: 12, 
+    borderRadius: 8, 
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  scanQRTxt: { 
+    color: '#fff', 
+    fontWeight: '700',
+    fontSize: 15,
+  },
+
+  attendedBadge: {
+    marginTop: 10,
+    backgroundColor: '#E8F5E9',
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  attendedTxt: {
+    color: '#1B5E20',
+    fontWeight: '700',
   },
 
   cancelBtn: {

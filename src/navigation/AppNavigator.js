@@ -11,6 +11,7 @@ import ProfileScreen from "../screens/Profile/ProfileScreen";
 import ClassesScreen from "../screens/Classes/ClassesScreen";
 import ClassDetailScreen from "../screens/Classes/ClassDetailScreen";
 import ClassUser from '../screens/Classes/ClassUser';
+import QRScannerScreen from '../screens/Classes/QRScannerScreen';
 import HistoryScreen from '../screens/History/HistoryScreen';
 
 const Stack = createNativeStackNavigator();
@@ -73,6 +74,14 @@ export default function AppNavigator() {
         name="MyReservations"
         component={ClassUser}
         options={{ headerShown: false }} // header personalizado como en Classes
+      />
+      <Stack.Screen
+        name="QRScanner"
+        component={QRScannerScreen}
+        options={{ 
+          headerShown: false,
+          presentation: 'modal'
+        }}
       />
       <Stack.Screen
         name="History"
