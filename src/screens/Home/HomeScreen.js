@@ -32,6 +32,7 @@ const storageRemove = async (key) => {
   return await AsyncStorage.removeItem(key);
 };
 import { getClasses } from "../../services/classes";
+import { removePushTokenFromBackend } from "../../services/notifications";
 
 export default function HomeScreen({ navigation }) {
   const [todaysClasses, setTodaysClasses] = useState([]);
@@ -55,8 +56,16 @@ export default function HomeScreen({ navigation }) {
   };
 
   const handleLogout = async () => {
-  await storageRemove("token");
-  await storageRemove("user");
+    try {
+      // Eliminar el push token del backend antes de hacer logout
+      await removePushTokenFromBackend();
+    } catch (error) {
+      console.warn('Error eliminando push token:', error);
+      // Continuar con el logout aunque falle
+    }
+    
+    await storageRemove("token");
+    await storageRemove("user");
     navigation.replace("Login");
   };
 

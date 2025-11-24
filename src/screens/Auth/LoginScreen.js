@@ -12,6 +12,7 @@ import { Text, TextInput, Button, HelperText } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as LocalAuthentication from "expo-local-authentication";
 import { login as loginRequest, me as meRequest } from "../../services/auth";
+import { registerForPushNotificationsAsync, savePushTokenToBackend } from "../../services/notifications";
 
 let SecureStore;
 try {
@@ -79,7 +80,19 @@ export default function LoginScreen({ navigation }) {
       // If login returns token + user, persist and go to Home
       if (data?.token) await storageSet("token", data.token);
       if (data?.user) await storageSet("user", JSON.stringify(data.user));
+      
       if (data?.token) {
+        // Registrar para notificaciones push y enviar token al backend
+        try {
+          const pushToken = await registerForPushNotificationsAsync();
+          if (pushToken) {
+            await savePushTokenToBackend(pushToken);
+          }
+        } catch (pushError) {
+          console.warn('Error registrando notificaciones push:', pushError);
+          // No bloqueamos el login si falla el registro de notificaciones
+        }
+        
         navigation.replace("Home");
         return;
       }
