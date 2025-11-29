@@ -10,7 +10,8 @@ const BACKGROUND_NOTIFICATION_TASK = 'BACKGROUND_NOTIFICATION_TASK';
 // Configuración de cómo se mostrarán las notificaciones cuando la app está en foreground
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowAlert: true, // Mantener por compatibilidad
+    shouldShowBanner: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
