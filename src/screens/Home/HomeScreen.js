@@ -32,6 +32,7 @@ const storageRemove = async (key) => {
   return await AsyncStorage.removeItem(key);
 };
 import { getClasses } from "../../services/classes";
+import NotificationDebugPanel from "../../services/notifications/testNotifications";
 
 export default function HomeScreen({ navigation }) {
   const [todaysClasses, setTodaysClasses] = useState([]);
@@ -128,6 +129,9 @@ export default function HomeScreen({ navigation }) {
             ¡Encuentra tu clase perfecta!
           </Text>
         </View>
+
+      {/* 🧪 PANEL DE PRUEBA DE NOTIFICACIONES - REMOVER EN PRODUCCIÓN */}
+      <NotificationDebugPanel />
 
       {/* Clases de hoy */}
       <View style={styles.section}>

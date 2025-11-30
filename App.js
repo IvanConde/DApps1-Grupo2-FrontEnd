@@ -1,5 +1,5 @@
 // App.js
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import {SafeAreaProvider} from "react-native-safe-area-context";
 import { Provider as PaperProvider } from "react-native-paper";
 import { NavigationContainer } from "@react-navigation/native";
@@ -7,8 +7,14 @@ import AppNavigator from "./src/navigation/AppNavigator";
 
 import { Camera } from "expo-camera";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { 
+  initializeNotificationSystem, 
+  setupNotificationResponseListener 
+} from "./src/services/notifications";
 
 export default function App() {
+  const navigationRef = useRef(null);
+
   useEffect(() => {
     const ASKED_FLAG = "askedPermissionsV3"; // cambialo si necesitás re-preguntar en una futura versión
 
@@ -35,10 +41,37 @@ export default function App() {
     askOnFirstLaunch();
   }, []);
 
+  // Inicializar sistema de notificaciones
+  useEffect(() => {
+    let notificationListener;
+
+    const setupNotifications = async () => {
+      try {
+        // Inicializar el sistema (permisos, background task, primera consulta)
+        await initializeNotificationSystem();
+        
+        // Configurar listener para cuando el usuario toque una notificación
+        if (navigationRef.current) {
+          notificationListener = setupNotificationResponseListener(navigationRef);
+        }
+      } catch (error) {
+        console.error('[App] Error configurando notificaciones:', error);
+      }
+    };
+
+    setupNotifications();
+
+    return () => {
+      if (notificationListener) {
+        notificationListener.remove();
+      }
+    };
+  }, []);
+
   return (
     <PaperProvider>
       <SafeAreaProvider>
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <AppNavigator />
       </NavigationContainer>
       </SafeAreaProvider>
