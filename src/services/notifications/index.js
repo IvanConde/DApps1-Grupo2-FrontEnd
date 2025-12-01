@@ -54,32 +54,43 @@ export async function fetchAndShowNotifications() {
       return 0;
     }
     
-    console.log('[Notifications] Consultando notificaciones pendientes...');
+    console.log('[Notifications] 📡 Consultando notificaciones pendientes...');
     
     const response = await api.get('/notifications');
     const notifications = response.data || [];
     
-    console.log(`[Notifications] Recibidas ${notifications.length} notificaciones`);
+    console.log(`[Notifications] ✅ Recibidas ${notifications.length} notificaciones:`, 
+      JSON.stringify(notifications, null, 2));
     
     // Mostrar cada notificación localmente
+    let shown = 0;
     for (const notif of notifications) {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: notif.title || 'RitmoFit',
-          body: notif.body || '',
-          data: {
-            ...notif.data,
-            notificationId: notif.id,
-            type: notif.type,
+      try {
+        console.log(`[Notifications] 📬 Mostrando notificación ID ${notif.id}: "${notif.title}"`);
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: notif.title || 'RitmoFit',
+            body: notif.body || '',
+            data: {
+              ...notif.data,
+              notificationId: notif.id,
+              type: notif.type,
+            },
           },
-        },
-        trigger: null, // Mostrar inmediatamente
-      });
+          trigger: null, // Mostrar inmediatamente
+        });
+        shown++;
+        console.log(`[Notifications] ✅ Notificación ${notif.id} programada correctamente`);
+      } catch (err) {
+        console.error(`[Notifications] ❌ Error mostrando notificación ${notif.id}:`, err);
+      }
     }
     
+    console.log(`[Notifications] 🎯 Total mostradas: ${shown}/${notifications.length}`);
     return notifications.length;
   } catch (error) {
-    console.error('[Notifications] Error fetching notifications:', error);
+    console.error('[Notifications] ❌ Error fetching notifications:', error);
+    console.error('[Notifications] Error details:', error.response?.data);
     // No lanzamos error para que el background task no falle
     return 0;
   }
@@ -157,7 +168,11 @@ export function setupNotificationResponseListener(navigationRef) {
       console.log('[Notifications] Usuario tocó notificación:', data);
       
       // Navegar según el tipo de notificación
-      if (data.classId) {
+      if (data.type === 'rate_class' && data.historyId) {
+        // Para notificaciones de calificar clase, ir directamente al historial
+        // El HistoryScreen mostrará el botón de calificación si es elegible
+        navigationRef.current?.navigate('History');
+      } else if (data.classId) {
         navigationRef.current?.navigate('ClassDetail', {
           classId: data.classId,
           fromNotification: true,
