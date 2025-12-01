@@ -14,6 +14,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
 import { getHistory } from '../../services/history';
+import RateClassModal from './RateClassModal';
+import { fetchAndShowNotifications } from '../../services/notifications';
 
 // Helpers para parsear y formatear YYYY-MM-DD sin introducir desplazamientos de zona horaria
 const parseYMD = (dateString) => {
@@ -39,6 +41,10 @@ const HistoryScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Estados para el modal de calificación
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [selectedClass, setSelectedClass] = useState(null);
   
   // Estados para filtros
   const [filters, setFilters] = useState({
@@ -214,6 +220,16 @@ const HistoryScreen = ({ navigation }) => {
     }
   };
 
+  const handleRateClass = (item) => {
+    setSelectedClass(item);
+    setShowRatingModal(true);
+  };
+
+  const handleRatingSubmitted = () => {
+    // Recargar el historial para obtener las calificaciones actualizadas
+    loadHistory();
+  };
+
   const renderHistoryItem = ({ item }) => (
     <View style={styles.historyCard}>
       <View style={styles.cardHeader}>
@@ -259,6 +275,57 @@ const HistoryScreen = ({ navigation }) => {
             </Text>
           </View>
         </View>
+
+        {/* Sección de calificación */}
+        {item.attendance_status === 'attended' && (
+          <View style={styles.ratingSection}>
+            {item.rating_id ? (
+              // Mostrar calificación existente
+              <View style={styles.existingRating}>
+                <View style={styles.ratingHeader}>
+                  <Text style={styles.ratingTitle}>Tu calificación:</Text>
+                  <TouchableOpacity
+                    onPress={() => handleRateClass(item)}
+                    style={styles.editRatingButton}
+                  >
+                    <Text style={styles.editRatingText}>✏️ Editar</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.starsDisplay}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Text key={star} style={styles.starIcon}>
+                      {star <= item.rating ? '⭐' : '☆'}
+                    </Text>
+                  ))}
+                  <Text style={styles.ratingValue}>({item.rating}/5)</Text>
+                </View>
+                {item.rating_comment && (
+                  <View style={styles.commentContainer}>
+                    <Text style={styles.commentLabel}>Comentario:</Text>
+                    <Text style={styles.commentText} numberOfLines={2}>
+                      {item.rating_comment}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            ) : item.can_rate ? (
+              // Botón para calificar si está habilitado
+              <TouchableOpacity
+                style={styles.rateButton}
+                onPress={() => handleRateClass(item)}
+              >
+                <Text style={styles.rateButtonText}>⭐ Calificar esta clase</Text>
+              </TouchableOpacity>
+            ) : (
+              // Mensaje de espera si aún no pasaron 24 horas
+              <View style={styles.waitingMessage}>
+                <Text style={styles.waitingText}>
+                  ⏳ Podrás calificar esta clase 24 horas después de asistir
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
       </View>
     </View>
   );
@@ -417,13 +484,39 @@ const HistoryScreen = ({ navigation }) => {
       <View style={styles.container}>
         {/* Header verde */}
         <View style={styles.header}>
-          <Text style={styles.title}>Historial de Asistencias</Text>
-          <TouchableOpacity
-            style={styles.filterButton}
-            onPress={() => setShowFilters(true)}
-          >
-            <Text style={styles.filterButtonText}>🔍 Filtros</Text>
-          </TouchableOpacity>
+          <View style={styles.headerLeft}>
+            <Text style={styles.title}>Historial de Asistencias</Text>
+          </View>
+          <View style={styles.headerRight}>
+            <TouchableOpacity
+              style={styles.debugButton}
+              onPress={async () => {
+                Alert.alert('🔔 Verificando...', 'Consultando notificaciones del servidor...');
+                try {
+                  const count = await fetchAndShowNotifications();
+                  Alert.alert(
+                    '✅ Consulta completa',
+                    count > 0 
+                      ? `Se mostraron ${count} notificación(es)` 
+                      : 'No hay notificaciones pendientes'
+                  );
+                  // Recargar historial para actualizar el estado can_rate
+                  loadHistory();
+                } catch (error) {
+                  Alert.alert('❌ Error', 'No se pudieron consultar las notificaciones');
+                  console.error(error);
+                }
+              }}
+            >
+              <Text style={styles.debugButtonText}>🔔</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.filterButton}
+              onPress={() => setShowFilters(true)}
+            >
+              <Text style={styles.filterButtonText}>🔍</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
       {history.length === 0 ? (
@@ -469,6 +562,18 @@ const HistoryScreen = ({ navigation }) => {
       </TouchableOpacity>
 
       <FiltersModal />
+      
+      {/* Modal de calificación */}
+      <RateClassModal
+        visible={showRatingModal}
+        onClose={() => {
+          setShowRatingModal(false);
+          setSelectedClass(null);
+        }}
+        classData={selectedClass}
+        historyId={selectedClass?.history_id}
+        onRatingSubmitted={handleRatingSubmitted}
+      />
     </View>
     </SafeAreaView>
   );
@@ -500,22 +605,39 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  headerLeft: {
+    flex: 1,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    gap: 10,
+  },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#fff',
-    flex: 1,
+  },
+  debugButton: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+    minWidth: 40,
+    alignItems: 'center',
+  },
+  debugButtonText: {
+    fontSize: 18,
   },
   filterButton: {
     backgroundColor: 'rgba(255,255,255,0.2)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 15,
+    minWidth: 40,
+    alignItems: 'center',
   },
   filterButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 18,
   },
   resultsHeader: {
     paddingHorizontal: 20,
@@ -820,6 +942,91 @@ const styles = StyleSheet.create({
   applyButtonText: {
     color: '#fff',
     fontWeight: '600',
+  },
+  // Rating section styles
+  ratingSection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  existingRating: {
+    backgroundColor: '#F8F9FA',
+    padding: 12,
+    borderRadius: 8,
+  },
+  ratingHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  ratingTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+  },
+  editRatingButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  editRatingText: {
+    fontSize: 12,
+    color: '#4CAF50',
+    fontWeight: '600',
+  },
+  starsDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  starIcon: {
+    fontSize: 18,
+    marginRight: 2,
+  },
+  ratingValue: {
+    fontSize: 13,
+    color: '#666',
+    marginLeft: 6,
+    fontWeight: '600',
+  },
+  commentContainer: {
+    marginTop: 8,
+  },
+  commentLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+    fontWeight: '600',
+  },
+  commentText: {
+    fontSize: 13,
+    color: '#333',
+    fontStyle: 'italic',
+  },
+  rateButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  rateButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  waitingMessage: {
+    backgroundColor: '#FFF3E0',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  waitingText: {
+    fontSize: 12,
+    color: '#F57C00',
+    textAlign: 'center',
   },
 });
 
