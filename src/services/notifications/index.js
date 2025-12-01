@@ -69,7 +69,8 @@ export async function fetchAndShowNotifications() {
       return 0;
     }
     
-    console.log('[Notifications] 📡 Consultando notificaciones pendientes... (Token encontrado)');
+    console.log('[Notifications] 📡 Consultando notificaciones pendientes... (Token encontrado)');    
+
     
     const response = await api.get('/notifications');
     const notifications = response.data || [];
