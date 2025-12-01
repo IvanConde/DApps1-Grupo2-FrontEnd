@@ -47,6 +47,13 @@ export async function requestNotificationPermissions() {
  */
 export async function fetchAndShowNotifications() {
   try {
+    // Verificar si hay token antes de hacer la petición
+    const token = await AsyncStorage.getItem('token');
+    if (!token) {
+      console.log('[Notifications] No hay usuario autenticado, omitiendo consulta');
+      return 0;
+    }
+    
     console.log('[Notifications] Consultando notificaciones pendientes...');
     
     const response = await api.get('/notifications');

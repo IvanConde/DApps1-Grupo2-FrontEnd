@@ -31,6 +31,7 @@ const storageRemove = async (key) => {
 };
 
 import { verifyOtp } from "../../services/auth";
+import { initializeNotificationSystem } from "../../services/notifications";
 
 export default function VerifyOtpScreen({ route, navigation }) {
   const { email } = route.params;
@@ -67,6 +68,14 @@ export default function VerifyOtpScreen({ route, navigation }) {
       if (data?.user) await storageSet("user", JSON.stringify(data.user));
 
       setSuccessMsg("¡Código verificado con éxito! Bienvenido a RitmoFit");
+      
+      // Inicializar sistema de notificaciones después de la verificación exitosa
+      try {
+        await initializeNotificationSystem();
+      } catch (error) {
+        console.error('[VerifyOTP] Error inicializando notificaciones:', error);
+      }
+      
       setTimeout(() => {
         navigation.replace("Home");
       }, 1500);

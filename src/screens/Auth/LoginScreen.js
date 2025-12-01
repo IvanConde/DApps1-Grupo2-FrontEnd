@@ -12,6 +12,7 @@ import { Text, TextInput, Button, HelperText } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as LocalAuthentication from "expo-local-authentication";
 import { login as loginRequest, me as meRequest } from "../../services/auth";
+import { initializeNotificationSystem } from "../../services/notifications";
 
 let SecureStore;
 try {
@@ -80,6 +81,13 @@ export default function LoginScreen({ navigation }) {
       if (data?.token) await storageSet("token", data.token);
       if (data?.user) await storageSet("user", JSON.stringify(data.user));
       if (data?.token) {
+        // Inicializar sistema de notificaciones después del login exitoso
+        try {
+          await initializeNotificationSystem();
+        } catch (error) {
+          console.error('[Login] Error inicializando notificaciones:', error);
+          // No bloqueamos el login si falla la inicialización de notificaciones
+        }
         navigation.replace("Home");
         return;
       }
@@ -119,8 +127,15 @@ export default function LoginScreen({ navigation }) {
           "No se pudo verificar tu identidad."
         );
       const me = await meRequest();
-      if (me?.user) navigation.replace("Home");
-      else {
+      if (me?.user) {
+        // Inicializar sistema de notificaciones después del login biométrico exitoso
+        try {
+          await initializeNotificationSystem();
+        } catch (error) {
+          console.error('[Login] Error inicializando notificaciones:', error);
+        }
+        navigation.replace("Home");
+      } else {
         await storageRemove("token");
         Alert.alert(
           "Sesión inválida",

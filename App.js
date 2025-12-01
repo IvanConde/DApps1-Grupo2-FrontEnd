@@ -41,25 +41,23 @@ export default function App() {
     askOnFirstLaunch();
   }, []);
 
-  // Inicializar sistema de notificaciones
+  // Configurar listener de notificaciones (sin inicializar el sistema aún)
   useEffect(() => {
     let notificationListener;
 
-    const setupNotifications = async () => {
+    const setupNotificationListener = async () => {
       try {
-        // Inicializar el sistema (permisos, background task, primera consulta)
-        await initializeNotificationSystem();
-        
-        // Configurar listener para cuando el usuario toque una notificación
+        // Solo configurar el listener para cuando el usuario toque una notificación
+        // La inicialización del sistema se hará después del login
         if (navigationRef.current) {
           notificationListener = setupNotificationResponseListener(navigationRef);
         }
       } catch (error) {
-        console.error('[App] Error configurando notificaciones:', error);
+        console.error('[App] Error configurando listener de notificaciones:', error);
       }
     };
 
-    setupNotifications();
+    setupNotificationListener();
 
     return () => {
       if (notificationListener) {
