@@ -47,14 +47,29 @@ export async function requestNotificationPermissions() {
  */
 export async function fetchAndShowNotifications() {
   try {
-    // Verificar si hay token antes de hacer la petición
-    const token = await AsyncStorage.getItem('token');
+    // Verificar si hay token antes de hacer la petición (intentar ambos storages)
+    let token = null;
+    try {
+      // Intentar SecureStore primero
+      const SecureStore = require('expo-secure-store');
+      if (SecureStore?.getItemAsync) {
+        token = await SecureStore.getItemAsync('token');
+      }
+    } catch (e) {
+      // SecureStore no disponible
+    }
+    
+    // Si no hay token en SecureStore, intentar AsyncStorage
+    if (!token) {
+      token = await AsyncStorage.getItem('token');
+    }
+    
     if (!token) {
       console.log('[Notifications] No hay usuario autenticado, omitiendo consulta');
       return 0;
     }
     
-    console.log('[Notifications] 📡 Consultando notificaciones pendientes...');
+    console.log('[Notifications] 📡 Consultando notificaciones pendientes... (Token encontrado)');
     
     const response = await api.get('/notifications');
     const notifications = response.data || [];

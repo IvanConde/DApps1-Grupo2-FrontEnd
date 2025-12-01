@@ -64,13 +64,19 @@ export default function VerifyOtpScreen({ route, navigation }) {
     setSubmitting(true);
     try {
       const data = await verifyOtp(email, code.trim());
+      
+      // Guardar token y usuario ANTES de inicializar notificaciones
       if (data?.token) await storageSet("token", data.token);
       if (data?.user) await storageSet("user", JSON.stringify(data.user));
 
       setSuccessMsg("¡Código verificado con éxito! Bienvenido a RitmoFit");
       
+      // Esperar un momento para asegurar que el token esté guardado
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Inicializar sistema de notificaciones después de la verificación exitosa
       try {
+        console.log('[VerifyOTP] Inicializando notificaciones con token guardado');
         await initializeNotificationSystem();
       } catch (error) {
         console.error('[VerifyOTP] Error inicializando notificaciones:', error);

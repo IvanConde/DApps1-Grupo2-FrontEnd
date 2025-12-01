@@ -77,12 +77,18 @@ export default function LoginScreen({ navigation }) {
     setSubmitting(true);
     try {
       const data = await loginRequest(email.trim(), password);
-      // If login returns token + user, persist and go to Home
+      
+      // Guardar token y usuario ANTES de inicializar notificaciones
       if (data?.token) await storageSet("token", data.token);
       if (data?.user) await storageSet("user", JSON.stringify(data.user));
+      
       if (data?.token) {
+        // Esperar un momento para asegurar que el token esté guardado
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         // Inicializar sistema de notificaciones después del login exitoso
         try {
+          console.log('[Login] Inicializando notificaciones con token guardado');
           await initializeNotificationSystem();
         } catch (error) {
           console.error('[Login] Error inicializando notificaciones:', error);
