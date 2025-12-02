@@ -1,5 +1,6 @@
 // src/screens/Home/HomeScreen.js
 import React, { useState, useEffect } from "react";
+import { useFocusEffect } from '@react-navigation/native';
 import { 
   View, 
   StyleSheet, 
@@ -50,6 +51,14 @@ export default function HomeScreen({ navigation }) {
     
     return () => clearInterval(interval);
   }, []);
+
+  // Refrescar clases al volver a enfocar la pantalla Home
+  useFocusEffect(
+    React.useCallback(() => {
+      setLoading(true);
+      loadTodaysClasses();
+    }, [])
+  );
 
   const loadTodaysClasses = async () => {
     try {
