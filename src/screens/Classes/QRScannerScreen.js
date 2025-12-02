@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal, ActivityIndicat
 import { CameraView, Camera } from 'expo-camera';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { confirmAttendance } from '../../services/reservations';
+import { getClassById } from '../../services/classes';
 
 const QRScannerScreen = ({ navigation, route }) => {
   const [hasPermission, setHasPermission] = useState(null);
@@ -10,6 +11,7 @@ const QRScannerScreen = ({ navigation, route }) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [qrData, setQrData] = useState(null);
   const [confirming, setConfirming] = useState(false);
+  const [classNameById, setClassNameById] = useState('');
   const { reservationData } = route.params || {};
 
   useEffect(() => {
@@ -40,6 +42,15 @@ const QRScannerScreen = ({ navigation, route }) => {
       // Guardar datos y mostrar modal de confirmación
       setQrData(parsedData);
       setShowConfirmModal(true);
+      // Intentar obtener nombre de clase por ID para mostrarlo correctamente
+      try {
+        if (parsedData.classId) {
+          const cls = await getClassById(parsedData.classId);
+          if (cls?.name) setClassNameById(cls.name);
+        }
+      } catch (e) {
+        // No bloquear por error de lookup, dejamos nombre del QR
+      }
       
     } catch (error) {
       let errorMessage = 'Error al procesar el QR';
@@ -108,9 +119,17 @@ const QRScannerScreen = ({ navigation, route }) => {
     setScanned(false);
   };
 
+  // Parseo seguro de fecha local YYYY-MM-DD para evitar desfases por UTC
   const formatDate = (dateString) => {
     try {
-      const date = new Date(dateString);
+      const ymd = (dateString || '').split('T')[0];
+      const parts = ymd.split('-');
+      if (parts.length !== 3) return dateString;
+      const date = new Date(
+        parseInt(parts[0]),
+        parseInt(parts[1]) - 1,
+        parseInt(parts[2])
+      );
       return date.toLocaleDateString('es-AR', {
         weekday: 'long',
         day: 'numeric',
@@ -207,7 +226,7 @@ const QRScannerScreen = ({ navigation, route }) => {
             {qrData && (
               <View style={styles.modalContent}>
                 <Text style={styles.modalLabel}>📚 Clase</Text>
-                <Text style={styles.modalValue}>{qrData.className || qrData.name || 'Clase'}</Text>
+                <Text style={styles.modalValue}>{classNameById || qrData.className || qrData.name || 'Clase'}</Text>
 
                 <View style={styles.divider} />
 
