@@ -1,0 +1,7 @@
+1. Las reservas SOLO se pueden hacer con al menos 1 hora de anticipacion.
+2. El historial es un historial de ASISTENCIAS, es decir, solo figuraran las clases a las que el usuario haya asistido y hecho el check in.
+3. Las clases se pueden cancelar hasta 2 horas antes.
+4. El QR de una clase se puede escanear hasta 1 hora antes del inicio de la clase (check-in) y hasta 30 minutos tarde.
+5. Posterior a 30 minutos de arrancada una clase, si no se escaneo el QR, esta figurara como expirada.
+6. Las clases las cancelamos y reprogramamos mediante endpoints en el back, los cuales creamos una UI de testeo opcional para provocar estos eventos desde el front.
+7. Las notificaciones se refrescan cada 1 minuto, en background, cada 15m.

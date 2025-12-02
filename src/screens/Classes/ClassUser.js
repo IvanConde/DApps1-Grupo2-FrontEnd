@@ -76,6 +76,42 @@ const ClassUser = ({ navigation, route }) => {
     try {
       setLoading(true);
       const data = await getMyReservations();
+      
+      // Marcar como expiradas las clases donde pasó la ventana de QR sin confirmar asistencia
+      const now = new Date();
+      data.forEach(item => {
+        if (item.status === 'confirmada' && item.attendance_status !== 'attended') {
+          try {
+            const fechaClaseISO = item.fecha || item.class?.fecha;
+            const horaClase = item.hora || item.class?.hora;
+            
+            if (fechaClaseISO && horaClase) {
+              const fechaOnly = fechaClaseISO.split('T')[0];
+              const horaOnly = horaClase.substring(0, 5);
+              
+              const parts = fechaOnly.split('-');
+              const classDateTime = new Date(
+                parseInt(parts[0]),
+                parseInt(parts[1]) - 1,
+                parseInt(parts[2]),
+                parseInt(horaOnly.substring(0, 2)),
+                parseInt(horaOnly.substring(3, 5))
+              );
+              
+              // Ventana termina 30 min después de la clase
+              const thirtyMinAfter = new Date(classDateTime.getTime() + 30 * 60 * 1000);
+              
+              // Si ya pasaron los 30 min y no asistió, marcar como expirada
+              if (now > thirtyMinAfter) {
+                item.status = 'expirada';
+              }
+            }
+          } catch (err) {
+            console.error('Error validando expiración:', err);
+          }
+        }
+      });
+      
       // Orden: próximamente primero
       data.sort((a, b) => {
         // Parsear como hora local: YYYY-MM-DD + T + HH:MM:SS
