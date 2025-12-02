@@ -105,7 +105,9 @@ const confirmReservation = async () => {
     setClassData({ ...classData, cupo: result.cupo_restante });
     setHasReservation(true); // Actualizar estado local
   } catch (error) {
-    Alert.alert('Error', error.error || 'No se pudo crear la reserva.');
+    // Mostrar mensaje claro; para 409 recibimos Error(message)
+    const msg = error?.message || error?.error || 'No se pudo crear la reserva.';
+    Alert.alert('Error', msg);
   } finally {
     setReserving(false);
     setShowModal(false);

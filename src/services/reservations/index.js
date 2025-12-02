@@ -5,6 +5,13 @@ export const createReservation = async (classId) => {
     const response = await client.post('/reservations', { class_id: classId });
     return response.data;
   } catch (error) {
+    // No loggear como error si es un conflicto esperado (409) por superposición
+    if (error.response?.status === 409) {
+      // Propagar un mensaje claro para que el UI muestre alerta sin ruido en consola
+      const message = error.response?.data?.error || 'La reserva se superpone con otra existente';
+      throw new Error(message);
+    }
+    // Otros errores sí se loggean y se propagan con detalle
     console.error('Error creando reserva:', error);
     throw error.response?.data || { error: 'Error desconocido al crear reserva' };
   }

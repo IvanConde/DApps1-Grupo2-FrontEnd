@@ -182,7 +182,7 @@ const ClassUser = ({ navigation, route }) => {
     // Puede escanear QR si:
     // 1. Está confirmada
     // 2. No ha escaneado aún (attendance_status === 'pending')
-    // 3. Está en la ventana de tiempo (1h antes hasta 30min después)
+    // 3. Está en la ventana de tiempo (30m antes hasta 30min después)
     if (item.status !== 'confirmada' || item.attendance_status !== 'pending') return false;
 
     try {
@@ -205,11 +205,11 @@ const ClassUser = ({ navigation, route }) => {
       );
       const now = new Date();
 
-      // Ventana: desde 1 hora antes hasta 30 min después
-      const oneHourBefore = new Date(classDateTime.getTime() - 60 * 60 * 1000);
+      // Ventana: desde 30m antes hasta 30 min después
+      const thirtyMinBefore = new Date(classDateTime.getTime() - 30 * 60 * 1000);
       const thirtyMinAfter = new Date(classDateTime.getTime() + 30 * 60 * 1000);
 
-      return now >= oneHourBefore && now <= thirtyMinAfter;
+      return now >= thirtyMinBefore && now <= thirtyMinAfter;
     } catch (err) {
       console.error('Error validando ventana QR:', err);
       return false;
