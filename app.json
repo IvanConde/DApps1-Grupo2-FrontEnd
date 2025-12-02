@@ -53,7 +53,8 @@
           "color": "#ffffff",
           "sounds": []
         }
-      ]
+      ],
+      "expo-background-task"
     ]
   }
 }

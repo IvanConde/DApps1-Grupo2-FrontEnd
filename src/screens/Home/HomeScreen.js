@@ -37,9 +37,17 @@ import NotificationDebugPanel from "../../services/notifications/testNotificatio
 export default function HomeScreen({ navigation }) {
   const [todaysClasses, setTodaysClasses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
 
   useEffect(() => {
     loadTodaysClasses();
+    
+    // Actualizar fecha/hora cada segundo
+    const interval = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const loadTodaysClasses = async () => {
@@ -132,6 +140,36 @@ export default function HomeScreen({ navigation }) {
 
       {/* 🧪 PANEL DE PRUEBA DE NOTIFICACIONES - REMOVER EN PRODUCCIÓN */}
       <NotificationDebugPanel />
+
+      {/* 🧪 TESTER DE FECHA/HORA DEL DISPOSITIVO */}
+      <View style={styles.dateTimeTester}>
+        <Text style={styles.testerTitle}>📅 Fecha/Hora del Dispositivo</Text>
+        <View style={styles.testerContent}>
+          <View style={styles.testerRow}>
+            <Text style={styles.testerLabel}>Fecha:</Text>
+            <Text style={styles.testerValue}>
+              {currentDateTime.toLocaleDateString('es-AR', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </Text>
+          </View>
+          <View style={styles.testerRow}>
+            <Text style={styles.testerLabel}>Hora:</Text>
+            <Text style={styles.testerValue}>
+              {currentDateTime.toLocaleTimeString('es-AR')}
+            </Text>
+          </View>
+          <View style={styles.testerRow}>
+            <Text style={styles.testerLabel}>ISO:</Text>
+            <Text style={styles.testerValueSmall}>
+              {currentDateTime.toISOString()}
+            </Text>
+          </View>
+        </View>
+      </View>
 
       {/* Clases de hoy */}
       <View style={styles.section}>
@@ -429,5 +467,53 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     borderColor: '#ddd',
+  },
+  
+  // Estilos para el tester de fecha/hora
+  dateTimeTester: {
+    backgroundColor: '#E3F2FD',
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 20,
+    marginTop: 15,
+    marginBottom: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: '#2196F3',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  testerTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1976D2',
+    marginBottom: 12,
+  },
+  testerContent: {
+    gap: 8,
+  },
+  testerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  testerLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#555',
+    width: 60,
+  },
+  testerValue: {
+    fontSize: 14,
+    color: '#333',
+    flex: 1,
+    fontWeight: '500',
+  },
+  testerValueSmall: {
+    fontSize: 11,
+    color: '#666',
+    flex: 1,
+    fontFamily: 'monospace',
   },
 });

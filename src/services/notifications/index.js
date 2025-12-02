@@ -1,7 +1,8 @@
 // src/services/notifications/index.js
 import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
-import * as BackgroundFetch from 'expo-background-fetch';
+import * as BackgroundTask from 'expo-background-task';
+import { BackgroundTaskResult } from 'expo-background-task';
 import api from '../../api/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -117,26 +118,24 @@ export async function fetchAndShowNotifications() {
  */
 export async function registerBackgroundTask() {
   try {
-    // Definir la tarea
+    // Definir la tarea con TaskManager
     TaskManager.defineTask(BACKGROUND_NOTIFICATION_TASK, async () => {
       try {
         console.log('[Background Task] Ejecutando verificación de notificaciones');
         await fetchAndShowNotifications();
-        return BackgroundFetch.BackgroundFetchResult.NewData;
+        return BackgroundTaskResult.Success;
       } catch (error) {
         console.error('[Background Task] Error:', error);
-        return BackgroundFetch.BackgroundFetchResult.Failed;
+        return BackgroundTaskResult.Failed;
       }
     });
 
-    // Registrar la tarea para ejecutarse cada 15 minutos
-    const status = await BackgroundFetch.registerTaskAsync(BACKGROUND_NOTIFICATION_TASK, {
-      minimumInterval: 15 * 60, // 15 minutos en segundos
-      stopOnTerminate: false, // Continuar después de cerrar la app
-      startOnBoot: true, // Iniciar al reiniciar el dispositivo
+    // Registrar la tarea con BackgroundTask (minimumInterval en minutos)
+    await BackgroundTask.registerTaskAsync(BACKGROUND_NOTIFICATION_TASK, {
+      minimumInterval: 15, // 15 minutos
     });
     
-    console.log('[Notifications] Background task registrada:', status);
+    console.log('[Notifications] Background task registrada exitosamente');
     await AsyncStorage.setItem('notificationsTaskRegistered', 'true');
     return true;
   } catch (error) {
@@ -150,7 +149,7 @@ export async function registerBackgroundTask() {
  */
 export async function unregisterBackgroundTask() {
   try {
-    await BackgroundFetch.unregisterTaskAsync(BACKGROUND_NOTIFICATION_TASK);
+    await BackgroundTask.unregisterTaskAsync(BACKGROUND_NOTIFICATION_TASK);
     await AsyncStorage.removeItem('notificationsTaskRegistered');
     console.log('[Notifications] Background task desregistrada');
     return true;
@@ -188,6 +187,34 @@ export function setupNotificationResponseListener(navigationRef) {
         // Para notificaciones de calificar clase, ir directamente al historial
         // El HistoryScreen mostrará el botón de calificación si es elegible
         navigationRef.current?.navigate('History');
+      } else if (data.type === 'class_reminder') {
+        // Notificación de recordatorio de 1 hora antes -> ir a Mis Reservas
+        navigationRef.current?.navigate('MyReservations', {
+          highlightReservationId: data.reservationId,
+        });
+      } else if (data.type === 'class_rescheduled') {
+        // Notificación de reprogramación -> mostrar modal para aceptar o cancelar
+        // El backend envía: oldFecha, oldHora, newFecha, newHora, name
+        navigationRef.current?.navigate('MyReservations', {
+          showRescheduleModal: true,
+          reservationId: data.reservationId,
+          classId: data.classId,
+          oldDate: data.oldFecha,  // Backend envía 'oldFecha'
+          oldTime: data.oldHora,    // Backend envía 'oldHora'
+          newDate: data.newFecha,   // Backend envía 'newFecha'
+          newTime: data.newHora,    // Backend envía 'newHora'
+          className: data.name,     // Backend envía 'name'
+          sede: data.sede,
+        });
+      } else if (data.type === 'class_cancelled') {
+        // Notificación de clase cancelada -> mostrar modal y ofrecer ir al catálogo
+        navigationRef.current?.navigate('MyReservations', {
+          showCancelledModal: true,
+          className: data.name,
+          sede: data.sede,
+          fecha: data.fecha,
+          hora: data.hora,
+        });
       } else if (data.classId) {
         navigationRef.current?.navigate('ClassDetail', {
           classId: data.classId,

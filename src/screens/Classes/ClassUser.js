@@ -1,19 +1,76 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ActivityIndicator, Alert, RefreshControl
+  ActivityIndicator, Alert, RefreshControl, Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getMyReservations, cancelReservation } from '../../services/reservations';
 
-const ClassUser = ({ navigation }) => {
+const ClassUser = ({ navigation, route }) => {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [rescheduleData, setRescheduleData] = useState(null);
+  const [showCancelledModal, setShowCancelledModal] = useState(false);
+  const [cancelledData, setCancelledData] = useState(null);
 
   useEffect(() => {
     loadReservations();
   }, []);
+
+  // Manejar parámetros de notificación de reprogramación
+  useEffect(() => {
+    if (route.params?.showRescheduleModal) {
+      const {
+        reservationId,
+        classId,
+        oldDate,
+        oldTime,
+        newDate,
+        newTime,
+        className,
+        sede,
+      } = route.params;
+      
+      console.log('[ClassUser] Recibido de notificación:', {
+        oldDate, oldTime, newDate, newTime, className, sede
+      });
+      
+      setRescheduleData({
+        reservationId,
+        classId,
+        oldDate,
+        oldTime,
+        newDate,
+        newTime,
+        className: className || 'Clase',
+        sede: sede || '',
+      });
+      setShowRescheduleModal(true);
+      
+      // Limpiar parámetros para evitar que se muestre nuevamente
+      navigation.setParams({ showRescheduleModal: false });
+    }
+  }, [route.params]);
+
+  // Manejar parámetros de notificación de cancelación
+  useEffect(() => {
+    if (route.params?.showCancelledModal) {
+      const { className, sede, fecha, hora } = route.params;
+      
+      setCancelledData({
+        className: className || 'Clase',
+        sede: sede || '',
+        fecha,
+        hora,
+      });
+      setShowCancelledModal(true);
+      
+      // Limpiar parámetros
+      navigation.setParams({ showCancelledModal: false });
+    }
+  }, [route.params]);
 
   const loadReservations = async () => {
     try {
@@ -130,6 +187,37 @@ const ClassUser = ({ navigation }) => {
         },
       ]
     );
+  };
+
+  // Manejar aceptar reprogramación (mantener reserva)
+  const handleAcceptReschedule = () => {
+    setShowRescheduleModal(false);
+    Alert.alert(
+      '✅ Reserva mantenida', 
+      'Tu reserva se actualizó con el nuevo horario. Revisá tus reservas para ver los detalles.'
+    );
+    onRefresh();
+  };
+
+  // Manejar cancelar reprogramación (eliminar reserva)
+  const handleCancelReschedule = async () => {
+    if (!rescheduleData?.reservationId) {
+      setShowRescheduleModal(false);
+      return;
+    }
+
+    try {
+      await cancelReservation(rescheduleData.reservationId);
+      setShowRescheduleModal(false);
+      Alert.alert(
+        'Reserva cancelada',
+        'Has cancelado tu reserva para esta clase reprogramada.'
+      );
+      onRefresh();
+    } catch (error) {
+      Alert.alert('Error', error.message || 'No se pudo cancelar la reserva');
+      setShowRescheduleModal(false);
+    }
   };
 
   const formatDate = (dateStr) => {
@@ -260,6 +348,139 @@ const ClassUser = ({ navigation }) => {
       >
         <Text style={styles.backButtonText}>Volver</Text>
       </TouchableOpacity>
+
+      {/* Modal de reprogramación */}
+      <Modal
+        visible={showRescheduleModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowRescheduleModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>📅 Clase Reprogramada</Text>
+            
+            {rescheduleData && (
+              <>
+                <Text style={styles.modalClassName}>{rescheduleData.className}</Text>
+                
+                <View style={styles.modalDatesContainer}>
+                  <View style={styles.modalDateBox}>
+                    <Text style={styles.modalDateLabel}>Horario anterior:</Text>
+                    <Text style={styles.modalDateValue}>
+                      {formatDate(rescheduleData.oldDate)}
+                    </Text>
+                    <Text style={styles.modalTimeValue}>
+                      {formatTime(rescheduleData.oldTime)}
+                    </Text>
+                  </View>
+                  
+                  <Text style={styles.modalArrow}>→</Text>
+                  
+                  <View style={styles.modalDateBox}>
+                    <Text style={styles.modalDateLabel}>Nuevo horario:</Text>
+                    <Text style={[styles.modalDateValue, styles.modalDateNew]}>
+                      {formatDate(rescheduleData.newDate)}
+                    </Text>
+                    <Text style={[styles.modalTimeValue, styles.modalTimeNew]}>
+                      {formatTime(rescheduleData.newTime)}
+                    </Text>
+                  </View>
+                </View>
+                
+                <Text style={styles.modalQuestion}>
+                  ¿Qué deseas hacer con tu reserva?
+                </Text>
+                
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={styles.modalButtonAccept}
+                    onPress={handleAcceptReschedule}
+                  >
+                    <Text style={styles.modalButtonText}>✅ Mantener Reserva</Text>
+                    <Text style={styles.modalButtonSubtext}>Acepto el nuevo horario</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.modalButtonCancel}
+                    onPress={handleCancelReschedule}
+                  >
+                    <Text style={styles.modalButtonText}>❌ Cancelar Reserva</Text>
+                    <Text style={styles.modalButtonSubtext}>No me conviene el cambio</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de clase cancelada */}
+      <Modal
+        visible={showCancelledModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCancelledModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>❌ Clase Cancelada</Text>
+            
+            {cancelledData && (
+              <>
+                <View style={styles.cancelledIconContainer}>
+                  <Text style={styles.cancelledIcon}>😔</Text>
+                </View>
+                
+                <Text style={styles.modalClassName}>{cancelledData.className}</Text>
+                
+                {cancelledData.sede && (
+                  <Text style={styles.cancelledSede}>{cancelledData.sede}</Text>
+                )}
+                
+                {cancelledData.fecha && cancelledData.hora && (
+                  <View style={styles.cancelledDateContainer}>
+                    <Text style={styles.cancelledDate}>
+                      {formatDate(cancelledData.fecha)} • {formatTime(cancelledData.hora)}
+                    </Text>
+                  </View>
+                )}
+                
+                <Text style={styles.cancelledMessage}>
+                  Lo sentimos, esta clase ha sido cancelada por el gimnasio.
+                </Text>
+                
+                <Text style={styles.cancelledSubtext}>
+                  Tu reserva fue automáticamente cancelada.
+                </Text>
+                
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={styles.modalButtonAccept}
+                    onPress={() => {
+                      setShowCancelledModal(false);
+                      navigation.navigate('Classes');
+                    }}
+                  >
+                    <Text style={styles.modalButtonText}>🔍 Buscar Otra Clase</Text>
+                    <Text style={styles.modalButtonSubtext}>Ir al catálogo</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.modalButtonClose}
+                    onPress={() => {
+                      setShowCancelledModal(false);
+                      onRefresh();
+                    }}
+                  >
+                    <Text style={styles.modalButtonText}>Cerrar</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
     </SafeAreaView>
   );
@@ -345,6 +566,182 @@ const styles = StyleSheet.create({
   emptyText: { color: '#666', fontSize: 16, marginBottom: 10 },
   linkBtn: { backgroundColor: '#4CAF50', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
   linkTxt: { color: '#fff', fontWeight: '700' },
+
+  // Estilos del modal de reprogramación
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  modalClassName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#4CAF50',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalDatesContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+    backgroundColor: '#f9f9f9',
+    padding: 16,
+    borderRadius: 12,
+  },
+  modalDateBox: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  modalDateLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalDateValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  modalTimeValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#666',
+    textAlign: 'center',
+  },
+  modalDateNew: {
+    color: '#4CAF50',
+  },
+  modalTimeNew: {
+    color: '#4CAF50',
+  },
+  modalArrow: {
+    fontSize: 24,
+    color: '#4CAF50',
+    marginHorizontal: 8,
+    fontWeight: 'bold',
+  },
+  modalQuestion: {
+    fontSize: 15,
+    color: '#555',
+    textAlign: 'center',
+    marginBottom: 20,
+    fontWeight: '500',
+  },
+  modalButtons: {
+    gap: 12,
+  },
+  modalButtonAccept: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  modalButtonCancel: {
+    backgroundColor: '#FF5252',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  modalButtonSubtext: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 13,
+  },
+  
+  // Estilos para modal de clase cancelada
+  cancelledIconContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  cancelledIcon: {
+    fontSize: 64,
+  },
+  cancelledSede: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  cancelledDateContainer: {
+    backgroundColor: '#f9f9f9',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  cancelledDate: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  cancelledMessage: {
+    fontSize: 16,
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 12,
+    fontWeight: '500',
+    lineHeight: 22,
+  },
+  cancelledSubtext: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  modalButtonClose: {
+    backgroundColor: '#999',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
 });
 
 export default ClassUser;

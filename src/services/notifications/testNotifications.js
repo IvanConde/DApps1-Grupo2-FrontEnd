@@ -461,18 +461,30 @@ export default function NotificationDebugPanel() {
             • Ingresá el ID de la clase{'\n'}
             • Tocá "Cancelar Clase"{'\n'}
             • Tocá "Consultar Notificaciones"{'\n'}
-            • Verás la notificación de cancelación{'\n\n'}
+            • Verás la notificación de cancelación{'\n'}
+            • Al tocarla, te llevará al detalle{'\n\n'}
             
             <Text style={styles.bold}>3. Probar reprogramación:</Text>{'\n'}
             • Ingresá ID, nueva fecha y hora{'\n'}
             • Tocá "Reprogramar Clase"{'\n'}
             • Tocá "Consultar Notificaciones"{'\n'}
-            • Verás la notificación con los cambios{'\n\n'}
+            • Verás la notificación con los cambios{'\n'}
+            • Al tocarla, se abrirá un modal{'\n'}
+            • Podés aceptar o cancelar la reserva{'\n\n'}
             
-            <Text style={styles.bold}>4. Recordatorio 1h:</Text>{'\n'}
-            • Se genera automáticamente{'\n'}
+            <Text style={styles.bold}>4. Recordatorio 1 hora antes:</Text>{'\n'}
+            • Se genera automáticamente por el backend{'\n'}
             • Reservá una clase que empiece en ~1 hora{'\n'}
-            • Esperá o consultá notificaciones
+            • El backend creará la notificación{'\n'}
+            • Tocá "Consultar Notificaciones"{'\n'}
+            • Al tocar el recordatorio, te lleva a Mis Reservas{'\n\n'}
+            
+            <Text style={styles.bold}>💡 Cómo probar el recordatorio fácilmente:</Text>{'\n'}
+            • Opción A: Modificá la hora del sistema{'\n'}
+            • Opción B: Creá una clase 1h en el futuro{'\n'}
+            • Opción C: Pedile al backend que ajuste{'\n'}
+            {'  '}la lógica temporalmente (30min en vez de 1h){'\n'}
+            • Esperá 15 min y consultá notificaciones
           </Text>
         </View>
 
