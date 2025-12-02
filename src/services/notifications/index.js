@@ -18,6 +18,18 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// Definir la tarea de background al inicializar el módulo (requerido por expo-task-manager)
+TaskManager.defineTask(BACKGROUND_NOTIFICATION_TASK, async () => {
+  try {
+    console.log('[Background Task] Ejecutando verificación de notificaciones');
+    await fetchAndShowNotifications();
+    return BackgroundTaskResult.Success;
+  } catch (error) {
+    console.error('[Background Task] Error:', error);
+    return BackgroundTaskResult.Failed;
+  }
+});
+
 /**
  * Solicita permisos para mostrar notificaciones locales
  */
@@ -118,18 +130,6 @@ export async function fetchAndShowNotifications() {
  */
 export async function registerBackgroundTask() {
   try {
-    // Definir la tarea con TaskManager
-    TaskManager.defineTask(BACKGROUND_NOTIFICATION_TASK, async () => {
-      try {
-        console.log('[Background Task] Ejecutando verificación de notificaciones');
-        await fetchAndShowNotifications();
-        return BackgroundTaskResult.Success;
-      } catch (error) {
-        console.error('[Background Task] Error:', error);
-        return BackgroundTaskResult.Failed;
-      }
-    });
-
     // Registrar la tarea con BackgroundTask (minimumInterval en minutos)
     await BackgroundTask.registerTaskAsync(BACKGROUND_NOTIFICATION_TASK, {
       minimumInterval: 15, // 15 minutos
@@ -301,30 +301,29 @@ export function useNotifications(navigationRef) {
 }
 
 // ============================================
-// Long Polling - Consulta periódica cada 5 minutos
+// Long Polling - Consulta periódica cada x minutos
 // ============================================
 let pollingInterval = null;
 
 /**
- * Inicia el long polling - consulta notificaciones cada 5 minutos
+ * Inicia el long polling - consulta notificaciones cada x minutos
+ * NOTA: NO consulta inmediatamente, asume que ya se hizo una consulta inicial
  */
 export function startNotificationPolling() {
+  var tiempo = 1; // 15 minutos
   // Limpiar intervalo anterior si existe
   if (pollingInterval) {
     clearInterval(pollingInterval);
   }
 
-  // Consultar inmediatamente al iniciar
-  console.log('[Long Polling] 🚀 Iniciando...');
-  fetchAndShowNotifications();
+  console.log('[Long Polling] 🚀 Iniciando intervalo...');
 
-  // Luego consultar cada 15 minutos (900000 ms)
   pollingInterval = setInterval(async () => {
-    console.log('[Long Polling] ⏰ Consultando notificaciones (cada 15 min)...');
+    console.log('[Long Polling] ⏰ Consultando notificaciones...');
     await fetchAndShowNotifications();
-  }, 15 * 60 * 1000); // 15 minutos
+  }, tiempo * 60 * 1000); // Seteamos aca el tiempo de refresco
   
-  console.log('[Long Polling] ✅ Activo - consultará cada 15 minutos');
+  console.log(`[Long Polling] ✅ Activo - consultará cada ${tiempo} minutos`);
 }
 
 /**

@@ -43,27 +43,32 @@ export default function App() {
     askOnFirstLaunch();
   }, []);
 
-  // Configurar listener de notificaciones y long polling
+  // Inicializar sistema completo de notificaciones (una sola vez)
   useEffect(() => {
     let notificationListener;
 
-    const setupNotificationListener = async () => {
+    const setupNotifications = async () => {
       try {
-        // Configurar el listener para cuando el usuario toque una notificación
+        // 1. Inicializar sistema (permisos + background task + primera consulta)
+        const ok = await initializeNotificationSystem();
+        console.log('[App] initializeNotificationSystem ->', ok ? 'ok' : 'no-perms-or-error');
+        
+        // 2. Configurar listener para cuando el usuario toque una notificación
         if (navigationRef.current) {
           notificationListener = setupNotificationResponseListener(navigationRef);
         }
         
-        // Iniciar long polling automático cada 5 minutos
+        // 3. Iniciar long polling automático cada 15 minutos
+        // (NO hace consulta inmediata porque initializeNotificationSystem ya lo hizo)
         startNotificationPolling();
         
-        console.log('[App] Sistema de notificaciones configurado con long polling');
+        console.log('[App] Sistema de notificaciones configurado completamente');
       } catch (error) {
-        console.error('[App] Error configurando listener de notificaciones:', error);
+        console.error('[App] Error configurando notificaciones:', error);
       }
     };
 
-    setupNotificationListener();
+    setupNotifications();
 
     return () => {
       if (notificationListener) {
