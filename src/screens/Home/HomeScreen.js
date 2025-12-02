@@ -35,6 +35,7 @@ import { getClasses } from "../../services/classes";
 import NotificationDebugPanel from "../../services/notifications/testNotifications";
 
 export default function HomeScreen({ navigation }) {
+  const DEBUG_UI = true; // Toggle para mostrar paneles de debug en Home
   const [todaysClasses, setTodaysClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
@@ -146,38 +147,40 @@ export default function HomeScreen({ navigation }) {
           </Text>
         </View>
 
-      {/* 🧪 PANEL DE PRUEBA DE NOTIFICACIONES - REMOVER EN PRODUCCIÓN */}
-      <NotificationDebugPanel />
+      {/* 🧪 PANEL DE PRUEBA DE NOTIFICACIONES - controlado por DEBUG_UI */}
+      {DEBUG_UI && <NotificationDebugPanel />}
 
-      {/* 🧪 TESTER DE FECHA/HORA DEL DISPOSITIVO */}
-      <View style={styles.dateTimeTester}>
-        <Text style={styles.testerTitle}>📅 Fecha/Hora del Dispositivo</Text>
-        <View style={styles.testerContent}>
-          <View style={styles.testerRow}>
-            <Text style={styles.testerLabel}>Fecha:</Text>
-            <Text style={styles.testerValue}>
-              {currentDateTime.toLocaleDateString('es-AR', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </Text>
-          </View>
-          <View style={styles.testerRow}>
-            <Text style={styles.testerLabel}>Hora:</Text>
-            <Text style={styles.testerValue}>
-              {currentDateTime.toLocaleTimeString('es-AR')}
-            </Text>
-          </View>
-          <View style={styles.testerRow}>
-            <Text style={styles.testerLabel}>ISO:</Text>
-            <Text style={styles.testerValueSmall}>
-              {currentDateTime.toISOString()}
-            </Text>
+      {/* 🧪 TESTER DE FECHA/HORA DEL DISPOSITIVO - controlado por DEBUG_UI */}
+      {DEBUG_UI && (
+        <View style={styles.dateTimeTester}>
+          <Text style={styles.testerTitle}>📅 Fecha/Hora del Dispositivo</Text>
+          <View style={styles.testerContent}>
+            <View style={styles.testerRow}>
+              <Text style={styles.testerLabel}>Fecha:</Text>
+              <Text style={styles.testerValue}>
+                {currentDateTime.toLocaleDateString('es-AR', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </Text>
+            </View>
+            <View style={styles.testerRow}>
+              <Text style={styles.testerLabel}>Hora:</Text>
+              <Text style={styles.testerValue}>
+                {currentDateTime.toLocaleTimeString('es-AR')}
+              </Text>
+            </View>
+            <View style={styles.testerRow}>
+              <Text style={styles.testerLabel}>ISO:</Text>
+              <Text style={styles.testerValueSmall}>
+                {currentDateTime.toISOString()}
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
+      )}
 
       {/* Clases de hoy */}
       <View style={styles.section}>
