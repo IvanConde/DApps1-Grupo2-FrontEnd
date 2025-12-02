@@ -299,3 +299,41 @@ export function useNotifications(navigationRef) {
   
   return { isInitialized };
 }
+
+// ============================================
+// Long Polling - Consulta periódica cada 5 minutos
+// ============================================
+let pollingInterval = null;
+
+/**
+ * Inicia el long polling - consulta notificaciones cada 5 minutos
+ */
+export function startNotificationPolling() {
+  // Limpiar intervalo anterior si existe
+  if (pollingInterval) {
+    clearInterval(pollingInterval);
+  }
+
+  // Consultar inmediatamente al iniciar
+  console.log('[Long Polling] 🚀 Iniciando...');
+  fetchAndShowNotifications();
+
+  // Luego consultar cada 15 minutos (900000 ms)
+  pollingInterval = setInterval(async () => {
+    console.log('[Long Polling] ⏰ Consultando notificaciones (cada 15 min)...');
+    await fetchAndShowNotifications();
+  }, 15 * 60 * 1000); // 15 minutos
+  
+  console.log('[Long Polling] ✅ Activo - consultará cada 15 minutos');
+}
+
+/**
+ * Detiene el long polling
+ */
+export function stopNotificationPolling() {
+  if (pollingInterval) {
+    clearInterval(pollingInterval);
+    pollingInterval = null;
+    console.log('[Long Polling] ❌ Detenido');
+  }
+}

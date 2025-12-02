@@ -9,7 +9,9 @@ import { Camera } from "expo-camera";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { 
   initializeNotificationSystem, 
-  setupNotificationResponseListener 
+  setupNotificationResponseListener,
+  startNotificationPolling,
+  stopNotificationPolling,
 } from "./src/services/notifications";
 
 export default function App() {
@@ -41,17 +43,21 @@ export default function App() {
     askOnFirstLaunch();
   }, []);
 
-  // Configurar listener de notificaciones (sin inicializar el sistema aún)
+  // Configurar listener de notificaciones y long polling
   useEffect(() => {
     let notificationListener;
 
     const setupNotificationListener = async () => {
       try {
-        // Solo configurar el listener para cuando el usuario toque una notificación
-        // La inicialización del sistema se hará después del login
+        // Configurar el listener para cuando el usuario toque una notificación
         if (navigationRef.current) {
           notificationListener = setupNotificationResponseListener(navigationRef);
         }
+        
+        // Iniciar long polling automático cada 5 minutos
+        startNotificationPolling();
+        
+        console.log('[App] Sistema de notificaciones configurado con long polling');
       } catch (error) {
         console.error('[App] Error configurando listener de notificaciones:', error);
       }
@@ -63,6 +69,8 @@ export default function App() {
       if (notificationListener) {
         notificationListener.remove();
       }
+      // Detener polling al cerrar la app
+      stopNotificationPolling();
     };
   }, []);
 
