@@ -143,7 +143,11 @@ export default function RateClassModal({
                 📍 {classData.sede} • 👨‍🏫 {classData.profesor}
               </Text>
               <Text style={styles.classDetails}>
-                📅 {new Date(classData.fecha).toLocaleDateString('es-AR')} • 
+                📅 {(() => {
+                  const parts = classData.fecha.split('-');
+                  const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                  return d.toLocaleDateString('es-AR');
+                })()} • 
                 ⏰ {classData.hora?.substring(0, 5)}
               </Text>
             </View>

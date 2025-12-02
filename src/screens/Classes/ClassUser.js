@@ -78,8 +78,15 @@ const ClassUser = ({ navigation, route }) => {
       const data = await getMyReservations();
       // Orden: próximamente primero
       data.sort((a, b) => {
-        const da = new Date(`${a.fecha}T${a.hora}`);
-        const db = new Date(`${b.fecha}T${b.hora}`);
+        // Parsear como hora local: YYYY-MM-DD + T + HH:MM:SS
+        const partsA = a.fecha.split('-');
+        const da = new Date(parseInt(partsA[0]), parseInt(partsA[1]) - 1, parseInt(partsA[2]), 
+                            parseInt(a.hora.substring(0, 2)), parseInt(a.hora.substring(3, 5)));
+        
+        const partsB = b.fecha.split('-');
+        const db = new Date(parseInt(partsB[0]), parseInt(partsB[1]) - 1, parseInt(partsB[2]),
+                            parseInt(b.hora.substring(0, 2)), parseInt(b.hora.substring(3, 5)));
+        
         return da - db;
       });
       setReservations(data);
@@ -113,8 +120,15 @@ const ClassUser = ({ navigation, route }) => {
         // Extraer solo HH:MM del horaClase (por si viene con segundos)
         const horaOnly = horaClase.substring(0, 5);
         
-        // Parseamos fecha y hora juntas para crear el datetime correcto (sin zona horaria)
-        const classDateTime = new Date(`${fechaOnly}T${horaOnly}:00`);
+        // Parsear como hora local sin conversión UTC
+        const parts = fechaOnly.split('-');
+        const classDateTime = new Date(
+          parseInt(parts[0]), 
+          parseInt(parts[1]) - 1, 
+          parseInt(parts[2]),
+          parseInt(horaOnly.substring(0, 2)),
+          parseInt(horaOnly.substring(3, 5))
+        );
         const now = new Date();
 
         // Calcular el límite de cancelación: 2 horas antes de la clase
@@ -143,7 +157,16 @@ const ClassUser = ({ navigation, route }) => {
       
       const fechaOnly = fechaClaseISO.split('T')[0];
       const horaOnly = horaClase.substring(0, 5);
-      const classDateTime = new Date(`${fechaOnly}T${horaOnly}:00`);
+      
+      // Parsear como hora local
+      const parts = fechaOnly.split('-');
+      const classDateTime = new Date(
+        parseInt(parts[0]),
+        parseInt(parts[1]) - 1,
+        parseInt(parts[2]),
+        parseInt(horaOnly.substring(0, 2)),
+        parseInt(horaOnly.substring(3, 5))
+      );
       const now = new Date();
 
       // Ventana: desde 1 hora antes hasta 30 min después

@@ -87,9 +87,22 @@ const ClassesScreen = ({ navigation }) => {
   const normalizeDateOnly = (d) => {
     // Devuelve un Date a las 00:00 local del día dado (d puede ser string o Date)
     if (!d) return null;
-    const date = d instanceof Date ? d : new Date(String(d).slice(0, 10));
-    if (isNaN(date.getTime())) return null;
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    
+    if (d instanceof Date) {
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+    
+    // Si es string YYYY-MM-DD, parsearlo como hora local
+    const dateStr = String(d).slice(0, 10);
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return null;
+    
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    
+    const date = new Date(year, month, day);
+    return isNaN(date.getTime()) ? null : date;
   };
 
   const applyFilters = () => {
@@ -157,7 +170,22 @@ const ClassesScreen = ({ navigation }) => {
 
   const formatDateShort = (d) => {
     if (!d) return "";
-    const date = d instanceof Date ? d : new Date(String(d).slice(0, 10));
+    
+    let date;
+    if (d instanceof Date) {
+      date = d;
+    } else {
+      // Parsear string YYYY-MM-DD como hora local
+      const dateStr = String(d).slice(0, 10);
+      const parts = dateStr.split('-');
+      if (parts.length !== 3) return "";
+      
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      date = new Date(year, month, day);
+    }
+    
     if (isNaN(date.getTime())) return "";
     return date.toLocaleDateString("es-AR", {
       day: "2-digit",
@@ -255,14 +283,22 @@ const ClassesScreen = ({ navigation }) => {
       visible={showFilters}
       transparent
       animationType="slide"
-      onRequestClose={() => setShowFilters(false)}
+      onRequestClose={() => {
+        setShowStartPicker(false);
+        setShowEndPicker(false);
+        setShowFilters(false);
+      }}
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Filtrar Clases</Text>
             <TouchableOpacity
-              onPress={() => setShowFilters(false)}
+              onPress={() => {
+                setShowStartPicker(false);
+                setShowEndPicker(false);
+                setShowFilters(false);
+              }}
               style={styles.closeButton}
             >
               <Text style={styles.closeButtonText}>×</Text>
@@ -360,73 +396,6 @@ const ClassesScreen = ({ navigation }) => {
                   <Text style={styles.quickChipText}>Sin fecha</Text>
                 </TouchableOpacity>
               </View>
-
-              {/* Pickers nativos */}
-              {showStartPicker && (
-                <DateTimePicker
-                  value={
-                    filters.fechaDesde
-                      ? new Date(filters.fechaDesde)
-                      : new Date()
-                  }
-                  mode="date"
-                  display={Platform.OS === "ios" ? "spinner" : "default"}
-                  onChange={(_, selected) => {
-                    // En Android, siempre cierra; en iOS depende del display
-                    setShowStartPicker(Platform.OS === "ios");
-                    if (selected) {
-                      // Si "hasta" existe y es menor que "desde" nueva, lo ajustamos
-                      const end = filters.fechaHasta
-                        ? new Date(filters.fechaHasta)
-                        : null;
-                      const newStart = new Date(
-                        selected.getFullYear(),
-                        selected.getMonth(),
-                        selected.getDate()
-                      );
-                      let newEnd = end;
-                      if (end && end < newStart) newEnd = newStart;
-                      setFilters((prev) => ({
-                        ...prev,
-                        fechaDesde: newStart,
-                        fechaHasta: newEnd || prev.fechaHasta,
-                      }));
-                    }
-                  }}
-                />
-              )}
-
-              {showEndPicker && (
-                <DateTimePicker
-                  value={
-                    filters.fechaHasta
-                      ? new Date(filters.fechaHasta)
-                      : new Date()
-                  }
-                  mode="date"
-                  display={Platform.OS === "ios" ? "spinner" : "default"}
-                  onChange={(_, selected) => {
-                    setShowEndPicker(Platform.OS === "ios");
-                    if (selected) {
-                      const start = filters.fechaDesde
-                        ? new Date(filters.fechaDesde)
-                        : null;
-                      const newEnd = new Date(
-                        selected.getFullYear(),
-                        selected.getMonth(),
-                        selected.getDate()
-                      );
-                      let newStart = start;
-                      if (start && newEnd < start) newStart = newEnd;
-                      setFilters((prev) => ({
-                        ...prev,
-                        fechaDesde: newStart || prev.fechaDesde,
-                        fechaHasta: newEnd,
-                      }));
-                    }
-                  }}
-                />
-              )}
             </View>
 
             <View style={styles.filterActions}>
@@ -438,7 +407,11 @@ const ClassesScreen = ({ navigation }) => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.applyButton}
-                onPress={() => setShowFilters(false)}
+                onPress={() => {
+                  setShowStartPicker(false);
+                  setShowEndPicker(false);
+                  setShowFilters(false);
+                }}
               >
                 <Text style={styles.applyButtonText}>Aplicar</Text>
               </TouchableOpacity>
@@ -446,6 +419,81 @@ const ClassesScreen = ({ navigation }) => {
           </ScrollView>
         </View>
       </View>
+      
+      {/* Pickers fuera del modal para que aparezcan por encima */}
+      {showStartPicker && (
+        <DateTimePicker
+          value={
+            filters.fechaDesde
+              ? new Date(filters.fechaDesde)
+              : new Date()
+          }
+          mode="date"
+          display={Platform.OS === "ios" ? "spinner" : "default"}
+          onChange={(event, selected) => {
+            if (Platform.OS === "android") {
+              setShowStartPicker(false);
+            }
+            
+            if (event.type === "set" && selected) {
+              const end = filters.fechaHasta
+                ? new Date(filters.fechaHasta)
+                : null;
+              const newStart = new Date(
+                selected.getFullYear(),
+                selected.getMonth(),
+                selected.getDate()
+              );
+              let newEnd = end;
+              if (end && end < newStart) newEnd = newStart;
+              setFilters((prev) => ({
+                ...prev,
+                fechaDesde: newStart,
+                fechaHasta: newEnd || prev.fechaHasta,
+              }));
+            } else if (event.type === "dismissed") {
+              setShowStartPicker(false);
+            }
+          }}
+        />
+      )}
+
+      {showEndPicker && (
+        <DateTimePicker
+          value={
+            filters.fechaHasta
+              ? new Date(filters.fechaHasta)
+              : new Date()
+          }
+          mode="date"
+          display={Platform.OS === "ios" ? "spinner" : "default"}
+          onChange={(event, selected) => {
+            if (Platform.OS === "android") {
+              setShowEndPicker(false);
+            }
+            
+            if (event.type === "set" && selected) {
+              const start = filters.fechaDesde
+                ? new Date(filters.fechaDesde)
+                : null;
+              const newEnd = new Date(
+                selected.getFullYear(),
+                selected.getMonth(),
+                selected.getDate()
+              );
+              let newStart = start;
+              if (start && newEnd < start) newStart = newEnd;
+              setFilters((prev) => ({
+                ...prev,
+                fechaDesde: newStart || prev.fechaDesde,
+                fechaHasta: newEnd,
+              }));
+            } else if (event.type === "dismissed") {
+              setShowEndPicker(false);
+            }
+          }}
+        />
+      )}
     </Modal>
   );
 
