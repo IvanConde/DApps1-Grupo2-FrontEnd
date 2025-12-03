@@ -126,25 +126,27 @@ const confirmReservation = async () => {
 
 
   const handleShowLocation = async () => {
-    const url = classData?.direccion; // nueva columna con la URL del mapa
+    const url = classData?.direccion;
+    
+    // Debug: ver qué valor tiene
+    console.log('🗺️ [ClassDetail] Intentando abrir URL:', url);
+    
     if (!url) {
       setErrorTitle('📍 Dirección no disponible');
       setErrorMessage('Esta clase no tiene enlace de ubicación configurado.');
       setShowErrorModal(true);
       return;
     }
+    
     try {
-      const can = await Linking.canOpenURL(url);
-      if (!can) {
-        setErrorTitle('⚠️ No se puede abrir');
-        setErrorMessage('Verifica que la URL de la dirección sea válida.');
-        setShowErrorModal(true);
-        return;
-      }
+      // Intentar abrir directamente sin validar primero
+      // porque canOpenURL en Android es muy restrictivo
       await Linking.openURL(url);
+      console.log('🗺️ [ClassDetail] URL abierta exitosamente');
     } catch (e) {
-      setErrorTitle('❌ Error');
-      setErrorMessage('Ocurrió un problema al abrir el mapa.');
+      console.error('🗺️ [ClassDetail] Error abriendo URL:', e);
+      setErrorTitle('❌ Error al abrir el mapa');
+      setErrorMessage(`No se pudo abrir Google Maps. Verifica que tengas la aplicación instalada.\n\nURL: ${url}`);
       setShowErrorModal(true);
     }
   };
