@@ -36,7 +36,7 @@ import { getClasses } from "../../services/classes";
 import NotificationDebugPanel from "../../services/notifications/testNotifications";
 
 export default function HomeScreen({ navigation }) {
-  const DEBUG_UI = true; // Toggle para mostrar paneles de debug en Home
+  const DEBUG_UI = false; // Toggle para mostrar paneles de debug en Home
   const [todaysClasses, setTodaysClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());

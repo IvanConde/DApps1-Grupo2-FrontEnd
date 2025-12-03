@@ -11,10 +11,11 @@ import {
   Modal,
   ScrollView,
   Platform,
+  LayoutAnimation,
+  UIManager,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { Picker } from "@react-native-picker/picker";
+import { Calendar } from "react-native-calendars";
 import { getClasses, getDisciplines, getSedes } from "../../services/classes";
 
 // Helper para parsear fechas YYYY-MM-DD sin desplazamiento de zona horaria
@@ -37,18 +38,33 @@ const ClassesScreen = ({ navigation }) => {
   const [filters, setFilters] = useState({
     disciplina: "",
     sede: "",
-    fechaDesde: null, // Date o null
-    fechaHasta: null, // Date o null
+    fechaDesde: "", // String YYYY-MM-DD
+    fechaHasta: "", // String YYYY-MM-DD
   });
   const [showFilters, setShowFilters] = useState(false);
 
-  // Pickers de fecha
-  const [showStartPicker, setShowStartPicker] = useState(false);
-  const [showEndPicker, setShowEndPicker] = useState(false);
+  // Para Calendar
+  const [selectedDates, setSelectedDates] = useState({});
+  const [selectingDate, setSelectingDate] = useState(null); // 'from' | 'to' | null
+  
+  // Para selectores personalizados
+  const [showDisciplineSelector, setShowDisciplineSelector] = useState(false);
+  const [showSedeSelector, setShowSedeSelector] = useState(false);
 
   // Opciones para filtros
   const [disciplines, setDisciplines] = useState([]);
   const [sedes, setSedes] = useState([]);
+
+  useEffect(() => {
+    const isFabric = global?.nativeFabricUIManager != null;
+    if (
+      Platform.OS === "android" &&
+      !isFabric &&
+      UIManager.setLayoutAnimationEnabledExperimental
+    ) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  }, []);
 
   useEffect(() => {
     loadInitialData();
@@ -57,6 +73,14 @@ const ClassesScreen = ({ navigation }) => {
   useEffect(() => {
     applyFilters();
   }, [classes, filters]);
+
+  useEffect(() => {
+    updateSelectedDates(filters);
+  }, [filters]);
+
+  const runDropdownAnimation = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  };
 
   const loadInitialData = async () => {
     try {
@@ -147,13 +171,102 @@ const ClassesScreen = ({ navigation }) => {
     setFilters({
       disciplina: "",
       sede: "",
-      fechaDesde: null,
-      fechaHasta: null,
+      fechaDesde: "",
+      fechaHasta: "",
     });
+    setSelectedDates({});
+    setSelectingDate(null);
+    setShowDisciplineSelector(false);
+    setShowSedeSelector(false);
   };
 
   const clearDates = () => {
-    setFilters((prev) => ({ ...prev, fechaDesde: null, fechaHasta: null }));
+    setFilters((prev) => ({ ...prev, fechaDesde: "", fechaHasta: "" }));
+    setSelectedDates({});
+  };
+
+  // Función para manejar la selección de fechas en el Calendar
+  const onDateSelect = (day) => {
+    const dateStr = day.dateString; // YYYY-MM-DD
+
+    if (selectingDate === 'from') {
+      const newFilters = { ...filters, fechaDesde: dateStr };
+      // Si la fecha "desde" es posterior a la fecha "hasta", limpiar "hasta"
+      if (filters.fechaHasta && dateStr > filters.fechaHasta) {
+        newFilters.fechaHasta = '';
+      }
+      setFilters(newFilters);
+      updateSelectedDates(newFilters);
+    } else if (selectingDate === 'to') {
+      const newFilters = { ...filters, fechaHasta: dateStr };
+      // Si la fecha "hasta" es anterior a la fecha "desde", limpiar "desde"
+      if (filters.fechaDesde && dateStr < filters.fechaDesde) {
+        newFilters.fechaDesde = '';
+      }
+      setFilters(newFilters);
+      updateSelectedDates(newFilters);
+    }
+  };
+
+  // Actualizar las fechas marcadas en el calendario
+  const updateSelectedDates = (currentFilters) => {
+    try {
+      const dates = {};
+      
+      if (currentFilters.fechaDesde) {
+        dates[currentFilters.fechaDesde] = {
+          selected: true,
+          startingDay: true,
+          color: '#4CAF50',
+          textColor: 'white'
+        };
+      }
+      
+      if (currentFilters.fechaHasta) {
+        dates[currentFilters.fechaHasta] = {
+          selected: true,
+          endingDay: true,
+          color: '#4CAF50',
+          textColor: 'white'
+        };
+      }
+      
+      // Marcar días entre las fechas seleccionadas
+      if (currentFilters.fechaDesde && currentFilters.fechaHasta) {
+        const start = new Date(currentFilters.fechaDesde);
+        const end = new Date(currentFilters.fechaHasta);
+
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          const dateStr = d.toISOString().split('T')[0];
+          if (dateStr !== currentFilters.fechaDesde && dateStr !== currentFilters.fechaHasta) {
+            dates[dateStr] = {
+              selected: true,
+              color: '#E8F5E8',
+              textColor: '#2E7D32'
+            };
+          }
+        }
+
+        // Actualizar estilos de inicio y fin
+        dates[currentFilters.fechaDesde] = {
+          selected: true,
+          startingDay: true,
+          color: '#4CAF50',
+          textColor: 'white'
+        };
+        dates[currentFilters.fechaHasta] = {
+          selected: true,
+          endingDay: true,
+          color: '#4CAF50',
+          textColor: 'white'
+        };
+      }
+      
+      setSelectedDates(dates);
+    } catch (err) {
+      console.warn('Error updating selected dates:', err);
+      setSelectedDates({});
+    }
   };
 
   const formatDateHuman = (dateString) => {
@@ -168,25 +281,19 @@ const ClassesScreen = ({ navigation }) => {
     });
   };
 
-  const formatDateShort = (d) => {
-    if (!d) return "";
+  const formatDateShort = (dateString) => {
+    if (!dateString) return 'Seleccionar';
     
-    let date;
-    if (d instanceof Date) {
-      date = d;
-    } else {
-      // Parsear string YYYY-MM-DD como hora local
-      const dateStr = String(d).slice(0, 10);
-      const parts = dateStr.split('-');
-      if (parts.length !== 3) return "";
-      
-      const year = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      const day = parseInt(parts[2], 10);
-      date = new Date(year, month, day);
-    }
+    // Parsear string YYYY-MM-DD como hora local
+    const parts = dateString.split('-');
+    if (parts.length !== 3) return 'Seleccionar';
     
-    if (isNaN(date.getTime())) return "";
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    const date = new Date(year, month, day);
+    
+    if (isNaN(date.getTime())) return 'Seleccionar';
     return date.toLocaleDateString("es-AR", {
       day: "2-digit",
       month: "2-digit",
@@ -214,24 +321,21 @@ const ClassesScreen = ({ navigation }) => {
 
   const quickRangeToday = () => {
     const today = new Date();
-    const start = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    );
-    setFilters((prev) => ({ ...prev, fechaDesde: start, fechaHasta: start }));
+    const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD
+    const newFilters = { ...filters, fechaDesde: dateStr, fechaHasta: dateStr };
+    setFilters(newFilters);
+    updateSelectedDates(newFilters);
   };
 
   const quickRangeNext7 = () => {
     const today = new Date();
-    const start = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    );
-    const end = new Date(start);
+    const start = today.toISOString().split("T")[0];
+    const end = new Date(today);
     end.setDate(end.getDate() + 7);
-    setFilters((prev) => ({ ...prev, fechaDesde: start, fechaHasta: end }));
+    const endStr = end.toISOString().split("T")[0];
+    const newFilters = { ...filters, fechaDesde: start, fechaHasta: endStr };
+    setFilters(newFilters);
+    updateSelectedDates(newFilters);
   };
 
   const renderClassItem = ({ item }) => (
@@ -284,9 +388,10 @@ const ClassesScreen = ({ navigation }) => {
       transparent
       animationType="slide"
       onRequestClose={() => {
-        setShowStartPicker(false);
-        setShowEndPicker(false);
         setShowFilters(false);
+        setSelectingDate(null);
+        setShowDisciplineSelector(false);
+        setShowSedeSelector(false);
       }}
     >
       <View style={styles.modalOverlay}>
@@ -295,9 +400,10 @@ const ClassesScreen = ({ navigation }) => {
             <Text style={styles.modalTitle}>Filtrar Clases</Text>
             <TouchableOpacity
               onPress={() => {
-                setShowStartPicker(false);
-                setShowEndPicker(false);
                 setShowFilters(false);
+                setSelectingDate(null);
+                setShowDisciplineSelector(false);
+                setShowSedeSelector(false);
               }}
               style={styles.closeButton}
             >
@@ -309,74 +415,221 @@ const ClassesScreen = ({ navigation }) => {
             {/* Disciplina */}
             <View style={styles.filterGroup}>
               <Text style={styles.filterLabel}>Disciplina</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={filters.disciplina}
-                  onValueChange={(value) =>
-                    setFilters({ ...filters, disciplina: value })
+              <TouchableOpacity
+                style={[
+                  styles.selectorButton,
+                  showDisciplineSelector && styles.selectorButtonActive
+                ]}
+                onPress={() => {
+                  runDropdownAnimation();
+                  const nextState = !showDisciplineSelector;
+                  setShowDisciplineSelector(nextState);
+                  if (showSedeSelector) {
+                    setShowSedeSelector(false);
                   }
-                  style={styles.picker}
-                >
-                  <Picker.Item label="Todas las disciplinas" value="" />
+                }}
+              >
+                <Text style={[
+                  styles.selectorButtonText,
+                  filters.disciplina && styles.selectorButtonTextSelected
+                ]}>
+                  {filters.disciplina || 'Todas las disciplinas'}
+                </Text>
+                <Text style={styles.selectorArrow}>▼</Text>
+              </TouchableOpacity>
+              
+              {/* Lista de opciones de disciplina */}
+              {showDisciplineSelector && (
+                <ScrollView style={styles.selectorOptions} nestedScrollEnabled={true}>
+                  <TouchableOpacity
+                    style={styles.selectorOption}
+                    onPress={() => {
+                      runDropdownAnimation();
+                      setFilters({ ...filters, disciplina: '' });
+                      setShowDisciplineSelector(false);
+                    }}
+                  >
+                    <Text style={[
+                      styles.selectorOptionText,
+                      !filters.disciplina && styles.selectorOptionTextSelected
+                    ]}>
+                      Todas las disciplinas
+                    </Text>
+                  </TouchableOpacity>
                   {disciplines.map((discipline) => (
-                    <Picker.Item
+                    <TouchableOpacity
                       key={discipline}
-                      label={discipline}
-                      value={discipline}
-                    />
+                      style={styles.selectorOption}
+                      onPress={() => {
+                        runDropdownAnimation();
+                        setFilters({ ...filters, disciplina: discipline });
+                        setShowDisciplineSelector(false);
+                      }}
+                    >
+                      <Text style={[
+                        styles.selectorOptionText,
+                        filters.disciplina === discipline && styles.selectorOptionTextSelected
+                      ]}>
+                        {discipline}
+                      </Text>
+                    </TouchableOpacity>
                   ))}
-                </Picker>
-              </View>
+                </ScrollView>
+              )}
             </View>
 
             {/* Sede */}
             <View style={styles.filterGroup}>
               <Text style={styles.filterLabel}>Sede</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={filters.sede}
-                  onValueChange={(value) =>
-                    setFilters({ ...filters, sede: value })
+              <TouchableOpacity
+                style={[
+                  styles.selectorButton,
+                  showSedeSelector && styles.selectorButtonActive
+                ]}
+                onPress={() => {
+                  runDropdownAnimation();
+                  const nextState = !showSedeSelector;
+                  setShowSedeSelector(nextState);
+                  if (showDisciplineSelector) {
+                    setShowDisciplineSelector(false);
                   }
-                  style={styles.picker}
-                >
-                  <Picker.Item label="Todas las sedes" value="" />
+                }}
+              >
+                <Text style={[
+                  styles.selectorButtonText,
+                  filters.sede && styles.selectorButtonTextSelected
+                ]}>
+                  {filters.sede || 'Todas las sedes'}
+                </Text>
+                <Text style={styles.selectorArrow}>▼</Text>
+              </TouchableOpacity>
+              
+              {/* Lista de opciones de sede */}
+              {showSedeSelector && (
+                <ScrollView style={styles.selectorOptions} nestedScrollEnabled={true}>
+                  <TouchableOpacity
+                    style={styles.selectorOption}
+                    onPress={() => {
+                      runDropdownAnimation();
+                      setFilters({ ...filters, sede: '' });
+                      setShowSedeSelector(false);
+                    }}
+                  >
+                    <Text style={[
+                      styles.selectorOptionText,
+                      !filters.sede && styles.selectorOptionTextSelected
+                    ]}>
+                      Todas las sedes
+                    </Text>
+                  </TouchableOpacity>
                   {sedes.map((sede) => (
-                    <Picker.Item key={sede} label={sede} value={sede} />
+                    <TouchableOpacity
+                      key={sede}
+                      style={styles.selectorOption}
+                      onPress={() => {
+                        runDropdownAnimation();
+                        setFilters({ ...filters, sede: sede });
+                        setShowSedeSelector(false);
+                      }}
+                    >
+                      <Text style={[
+                        styles.selectorOptionText,
+                        filters.sede === sede && styles.selectorOptionTextSelected
+                      ]}>
+                        {sede}
+                      </Text>
+                    </TouchableOpacity>
                   ))}
-                </Picker>
-              </View>
+                </ScrollView>
+              )}
             </View>
 
             {/* Rango de fechas */}
             <View style={styles.filterGroup}>
               <Text style={styles.filterLabel}>Fecha (rango)</Text>
+              
+              {/* Selector de fechas */}
+              <View style={styles.dateSelectors}>
+                <View style={styles.dateSelector}>
+                  <Text style={styles.dateLabel}>Fecha desde:</Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.dateButton,
+                      selectingDate === 'from' && styles.dateButtonActive
+                    ]}
+                    onPress={() => {
+                      setSelectingDate(selectingDate === 'from' ? null : 'from');
+                    }}
+                  >
+                    <Text style={[
+                      styles.dateButtonText,
+                      selectingDate === 'from' && styles.dateButtonTextActive
+                    ]}>
+                      {formatDateShort(filters.fechaDesde)}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
 
-              <View style={styles.rangeRow}>
-                <TouchableOpacity
-                  style={styles.dateButton}
-                  onPress={() => setShowStartPicker(true)}
-                >
-                  <Text style={styles.dateButtonLabel}>Desde</Text>
-                  <Text style={styles.dateButtonValue}>
-                    {filters.fechaDesde
-                      ? formatDateShort(filters.fechaDesde)
-                      : "—"}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.dateButton}
-                  onPress={() => setShowEndPicker(true)}
-                >
-                  <Text style={styles.dateButtonLabel}>Hasta</Text>
-                  <Text style={styles.dateButtonValue}>
-                    {filters.fechaHasta
-                      ? formatDateShort(filters.fechaHasta)
-                      : "—"}
-                  </Text>
-                </TouchableOpacity>
+                <View style={styles.dateSelector}>
+                  <Text style={styles.dateLabel}>Fecha hasta:</Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.dateButton,
+                      selectingDate === 'to' && styles.dateButtonActive
+                    ]}
+                    onPress={() => {
+                      setSelectingDate(selectingDate === 'to' ? null : 'to');
+                    }}
+                  >
+                    <Text style={[
+                      styles.dateButtonText,
+                      selectingDate === 'to' && styles.dateButtonTextActive
+                    ]}>
+                      {formatDateShort(filters.fechaHasta)}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
+
+              {/* Instrucciones */}
+              {selectingDate && (
+                <View style={styles.instructions}>
+                  <Text style={styles.instructionsText}>
+                    {selectingDate === 'from' 
+                      ? 'Selecciona la fecha de inicio en el calendario'
+                      : 'Selecciona la fecha de fin en el calendario'
+                    }
+                  </Text>
+                </View>
+              )}
+
+              {/* Calendario - solo se muestra cuando hay selectingDate */}
+              {selectingDate && (
+                <View style={styles.calendarContainer}>
+                  <Calendar
+                    onDayPress={onDateSelect}
+                    markedDates={selectedDates}
+                    markingType="period"
+                    theme={{
+                      selectedDayBackgroundColor: '#4CAF50',
+                      selectedDayTextColor: '#ffffff',
+                      todayTextColor: '#4CAF50',
+                      dayTextColor: '#2d4150',
+                      textDisabledColor: '#d9e1e8',
+                      dotColor: '#4CAF50',
+                      selectedDotColor: '#ffffff',
+                      arrowColor: '#4CAF50',
+                      monthTextColor: '#2d4150',
+                      textDayFontFamily: 'System',
+                      textMonthFontFamily: 'System',
+                      textDayHeaderFontFamily: 'System',
+                      textDayFontSize: 16,
+                      textMonthFontSize: 16,
+                      textDayHeaderFontSize: 13
+                    }}
+                  />
+                </View>
+              )}
 
               {/* Accesos rápidos */}
               <View style={styles.quickRow}>
@@ -397,7 +650,10 @@ const ClassesScreen = ({ navigation }) => {
                 </TouchableOpacity>
               </View>
             </View>
+          </ScrollView>
 
+          {/* Botones de acción fijos al final con SafeAreaView */}
+          <SafeAreaView edges={['bottom']} style={styles.filterActionsContainer}>
             <View style={styles.filterActions}>
               <TouchableOpacity
                 style={styles.clearButton}
@@ -407,99 +663,20 @@ const ClassesScreen = ({ navigation }) => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.applyButton}
-                onPress={() => {
-                  setShowStartPicker(false);
-                  setShowEndPicker(false);
-                  setShowFilters(false);
-                }}
+                onPress={() => setShowFilters(false)}
               >
                 <Text style={styles.applyButtonText}>Aplicar</Text>
               </TouchableOpacity>
             </View>
-          </ScrollView>
+          </SafeAreaView>
         </View>
       </View>
-      
-      {/* Pickers fuera del modal para que aparezcan por encima */}
-      {showStartPicker && (
-        <DateTimePicker
-          value={
-            filters.fechaDesde
-              ? new Date(filters.fechaDesde)
-              : new Date()
-          }
-          mode="date"
-          display={Platform.OS === "ios" ? "spinner" : "default"}
-          onChange={(event, selected) => {
-            if (Platform.OS === "android") {
-              setShowStartPicker(false);
-            }
-            
-            if (event.type === "set" && selected) {
-              const end = filters.fechaHasta
-                ? new Date(filters.fechaHasta)
-                : null;
-              const newStart = new Date(
-                selected.getFullYear(),
-                selected.getMonth(),
-                selected.getDate()
-              );
-              let newEnd = end;
-              if (end && end < newStart) newEnd = newStart;
-              setFilters((prev) => ({
-                ...prev,
-                fechaDesde: newStart,
-                fechaHasta: newEnd || prev.fechaHasta,
-              }));
-            } else if (event.type === "dismissed") {
-              setShowStartPicker(false);
-            }
-          }}
-        />
-      )}
-
-      {showEndPicker && (
-        <DateTimePicker
-          value={
-            filters.fechaHasta
-              ? new Date(filters.fechaHasta)
-              : new Date()
-          }
-          mode="date"
-          display={Platform.OS === "ios" ? "spinner" : "default"}
-          onChange={(event, selected) => {
-            if (Platform.OS === "android") {
-              setShowEndPicker(false);
-            }
-            
-            if (event.type === "set" && selected) {
-              const start = filters.fechaDesde
-                ? new Date(filters.fechaDesde)
-                : null;
-              const newEnd = new Date(
-                selected.getFullYear(),
-                selected.getMonth(),
-                selected.getDate()
-              );
-              let newStart = start;
-              if (start && newEnd < start) newStart = newEnd;
-              setFilters((prev) => ({
-                ...prev,
-                fechaDesde: newStart || prev.fechaDesde,
-                fechaHasta: newEnd,
-              }));
-            } else if (event.type === "dismissed") {
-              setShowEndPicker(false);
-            }
-          }}
-        />
-      )}
     </Modal>
   );
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
+      <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'top']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4CAF50" />
           <Text style={styles.loadingText}>Cargando clases...</Text>
@@ -509,7 +686,7 @@ const ClassesScreen = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'top']}>
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>Catálogo de Clases</Text>
@@ -563,19 +740,21 @@ const ClassesScreen = ({ navigation }) => {
           </>
         )}
 
-      {/* Botón volver al final */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.navigate("Home")}
-      >
-        <Text style={styles.backButtonText}>Volver</Text>
-      </TouchableOpacity>
+      {/* Botón volver al final con SafeAreaView */}
+      <SafeAreaView edges={['bottom']} style={styles.backButtonContainer}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.navigate("Home")}
+        >
+          <Text style={styles.backButtonText}>Volver</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
 
       <FiltersModal />
     </View>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#f5f5f5' },
@@ -688,7 +867,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: "80%",
+    maxHeight: '85%',
   },
   modalHeader: {
     flexDirection: "row",
@@ -706,38 +885,131 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   closeButtonText: { fontSize: 24, color: "#666" },
-  filtersContent: { padding: 20 },
-  filterGroup: { marginBottom: 20 },
+  filtersContent: {
+    padding: 20,
+    paddingBottom: 80,
+  },
+  filterGroup: { 
+    marginBottom: 20,
+  },
   filterLabel: {
     fontSize: 16,
     fontWeight: "600",
     color: "#333",
     marginBottom: 8,
   },
-  pickerContainer: {
+  // Selectores personalizados (disciplina/sede)
+  selectorButton: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: '#ddd',
     borderRadius: 8,
-    backgroundColor: "#fff",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  picker: { height: 50 },
-  // Rango de fechas
-  rangeRow: { flexDirection: "row", gap: 10 },
-  dateButton: {
+  selectorButtonActive: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#E8F5E8',
+  },
+  selectorButtonText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  selectorButtonTextSelected: {
+    color: '#333',
+    fontWeight: '600',
+  },
+  selectorArrow: {
+    fontSize: 10,
+    color: '#666',
+  },
+  selectorOptions: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    maxHeight: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  selectorOption: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  selectorOptionText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  selectorOptionTextSelected: {
+    color: '#4CAF50',
+    fontWeight: '600',
+  },
+  // Date selectors
+  dateSelectors: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  dateSelector: {
     flex: 1,
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    marginHorizontal: 5,
   },
-  dateButtonLabel: { fontSize: 12, color: "#666" },
-  dateButtonValue: {
-    fontSize: 16,
-    color: "#333",
-    fontWeight: "600",
-    marginTop: 2,
+  dateLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  dateButton: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  dateButtonActive: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#E8F5E8',
+  },
+  dateButtonText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  dateButtonTextActive: {
+    color: '#2E7D32',
+    fontWeight: '600',
+  },
+  instructions: {
+    backgroundColor: '#E3F2FD',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  instructionsText: {
+    fontSize: 14,
+    color: '#1976D2',
+    textAlign: 'center',
+  },
+  calendarContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   quickRow: { flexDirection: "row", gap: 10, marginTop: 10 },
   quickChip: {
@@ -747,18 +1019,25 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   quickChipText: { color: "#333", fontWeight: "600", fontSize: 12 },
-  // Footer acciones
+  // Footer acciones (ahora fijo al final del modal con SafeAreaView)
+  filterActionsContainer: {
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
   filterActions: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 20,
+    paddingHorizontal: 20,
+    paddingTop: 15,
+    paddingBottom: 15,
   },
   clearButton: {
     flex: 1,
     backgroundColor: "#f5f5f5",
     paddingVertical: 12,
     borderRadius: 8,
-    marginRight: 10,
+    marginRight: 8,
     alignItems: "center",
   },
   clearButtonText: { color: "#666", fontWeight: "600" },
@@ -767,12 +1046,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#4CAF50",
     paddingVertical: 12,
     borderRadius: 8,
-    marginLeft: 10,
+    marginLeft: 8,
     alignItems: "center",
   },
   applyButtonText: { color: "#fff", fontWeight: "600" },
+  backButtonContainer: {
+    backgroundColor: '#f5f5f5',
+  },
   backButton: {
-    margin: 20,
+    marginHorizontal: 20,
+    marginTop: 10,
+    marginBottom: 10,
     paddingVertical: 15,
     alignItems: "center",
     borderWidth: 1,
