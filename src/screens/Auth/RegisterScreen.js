@@ -1,6 +1,6 @@
 // src/screens/Auth/RegisterScreen.js
 import React, { useState, useRef, useEffect } from "react";
-import { View, ScrollView, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { View, ScrollView, StyleSheet, TouchableOpacity, Alert, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Text,
@@ -37,6 +37,10 @@ export default function RegisterScreen({ navigation }) {
   const [errorMsg, setErrorMsg] = useState("");
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMsg, setSnackbarMsg] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorTitle, setErrorTitle] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const pass2Ref = useRef(null);
 
@@ -76,39 +80,27 @@ export default function RegisterScreen({ navigation }) {
         password,
       });
       // Don't store token yet. Require OTP verification after registration.
-      Alert.alert(
-        "✅ Registro exitoso",
-        "Se envió un código de verificación a tu correo. Revisá tu bandeja de entrada.",
-        [{ text: "Continuar", onPress: () => navigation.replace("VerifyOtp", { email: email.trim() }) }]
-      );
+      setShowSuccessModal(true);
     } catch (err) {
       const status = err?.response?.status;
       const apiMsg = err?.response?.data?.message || err?.response?.data?.error;
       
       if (status === 409) {
-        Alert.alert(
-          "⚠️ Email en uso",
-          apiMsg || "Ese email ya está registrado. Intentá iniciar sesión.",
-          [{ text: "OK" }]
-        );
+        setErrorTitle("⚠️ Email en uso");
+        setErrorMessage(apiMsg || "Ese email ya está registrado. Intentá iniciar sesión.");
+        setShowErrorModal(true);
       } else if (status === 400) {
-        Alert.alert(
-          "❌ Datos inválidos",
-          apiMsg || "Los datos ingresados no son válidos. Revisá e intentá nuevamente.",
-          [{ text: "Corregir" }]
-        );
+        setErrorTitle("❌ Datos inválidos");
+        setErrorMessage(apiMsg || "Los datos ingresados no son válidos. Revisá e intentá nuevamente.");
+        setShowErrorModal(true);
       } else if (err?.code === 'ECONNABORTED' || err?.code === 'ERR_NETWORK') {
-        Alert.alert(
-          "📡 Error de conexión",
-          "No se pudo conectar con el servidor. Verificá tu conexión a internet.",
-          [{ text: "Reintentar" }]
-        );
+        setErrorTitle("📡 Error de conexión");
+        setErrorMessage("No se pudo conectar con el servidor. Verificá tu conexión a internet.");
+        setShowErrorModal(true);
       } else {
-        Alert.alert(
-          "❌ Error",
-          apiMsg || "No se pudo completar el registro. Intenta nuevamente.",
-          [{ text: "Cerrar" }]
-        );
+        setErrorTitle("❌ Error");
+        setErrorMessage(apiMsg || "No se pudo completar el registro. Intenta nuevamente.");
+        setShowErrorModal(true);
       }
     } finally {
       setSubmitting(false);
@@ -246,6 +238,60 @@ export default function RegisterScreen({ navigation }) {
         </View>
       </ScrollView>
 
+      {/* Modal de éxito */}
+      <Modal
+        visible={showSuccessModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setShowSuccessModal(false);
+          navigation.replace("VerifyOtp", { email: email.trim() });
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalEmoji}>✅</Text>
+            <Text style={styles.modalTitle}>Registro exitoso</Text>
+            <Text style={styles.modalMessage}>Se envió un código de verificación a tu correo. Revisá tu bandeja de entrada.</Text>
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: '#4CAF50' }]}
+              onPress={() => {
+                setShowSuccessModal(false);
+                navigation.replace("VerifyOtp", { email: email.trim() });
+              }}
+            >
+              <Text style={styles.modalButtonText}>Continuar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de error */}
+      <Modal
+        visible={showErrorModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowErrorModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalEmoji}>
+              {errorTitle.includes('⚠️') ? '⚠️' : errorTitle.includes('📡') ? '📡' : '❌'}
+            </Text>
+            <Text style={styles.modalTitle}>
+              {errorTitle.replace('⚠️', '').replace('📡', '').replace('❌', '').trim()}
+            </Text>
+            <Text style={styles.modalMessage}>{errorMessage}</Text>
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: '#FF5252' }]}
+              onPress={() => setShowErrorModal(false)}
+            >
+              <Text style={styles.modalButtonText}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <Snackbar
         visible={snackbarVisible}
         onDismiss={() => setSnackbarVisible(false)}
@@ -340,4 +386,47 @@ const styles = StyleSheet.create({
   },
   loginButtonText: { color: "#4CAF50", fontSize: 16, fontWeight: "bold" },
   snackbar: { backgroundColor: "#2e7d32" },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 24,
+    width: '85%',
+    alignItems: 'center',
+  },
+  modalEmoji: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 15,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  modalButton: {
+    paddingHorizontal: 40,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 120,
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
 });

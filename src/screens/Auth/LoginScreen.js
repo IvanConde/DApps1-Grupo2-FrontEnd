@@ -6,6 +6,7 @@ import {
   Alert,
   ScrollView,
   StyleSheet,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, TextInput, Button, HelperText } from "react-native-paper";
@@ -43,6 +44,9 @@ export default function LoginScreen({ navigation }) {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorTitle, setErrorTitle] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const passwordRef = useRef(null);
 
   const emailIsInvalid =
@@ -103,34 +107,26 @@ export default function LoginScreen({ navigation }) {
       
       if (status === 401) {
         // Credenciales incorrectas - mostrar alert bonito
-        Alert.alert(
-          "🔒 Acceso denegado",
-          apiMsg || "Email o contraseña incorrectos. Por favor verificá tus datos.",
-          [{ text: "Entendido", style: "default" }]
-        );
+        setErrorTitle("🔒 Acceso denegado");
+        setErrorMessage(apiMsg || "Email o contraseña incorrectos. Por favor verificá tus datos.");
+        setShowErrorModal(true);
         setPassword("");
         requestAnimationFrame(() => passwordRef.current?.focus());
       } else if (status === 403) {
         // Cuenta no verificada
-        Alert.alert(
-          "⚠️ Verificación requerida",
-          apiMsg || "Tu cuenta requiere verificación. Revisa tu correo para el código.",
-          [{ text: "OK", style: "default" }]
-        );
+        setErrorTitle("⚠️ Verificación requerida");
+        setErrorMessage(apiMsg || "Tu cuenta requiere verificación. Revisa tu correo para el código.");
+        setShowErrorModal(true);
       } else if (err?.code === 'ECONNABORTED' || err?.code === 'ERR_NETWORK') {
         // Error de conexión
-        Alert.alert(
-          "📡 Error de conexión",
-          "No se pudo conectar con el servidor. Verificá tu conexión a internet.",
-          [{ text: "Reintentar", style: "default" }]
-        );
+        setErrorTitle("📡 Error de conexión");
+        setErrorMessage("No se pudo conectar con el servidor. Verificá tu conexión a internet.");
+        setShowErrorModal(true);
       } else {
         // Otros errores
-        Alert.alert(
-          "❌ Error",
-          apiMsg || "Ocurrió un error al iniciar sesión. Intenta nuevamente.",
-          [{ text: "Cerrar", style: "cancel" }]
-        );
+        setErrorTitle("❌ Error");
+        setErrorMessage(apiMsg || "Ocurrió un error al iniciar sesión. Intenta nuevamente.");
+        setShowErrorModal(true);
       }
     } finally {
       setSubmitting(false);
@@ -140,20 +136,20 @@ export default function LoginScreen({ navigation }) {
   const handleBiometricLogin = async () => {
     try {
       const token = await storageGet("token");
-      if (!token)
-        return Alert.alert(
-          "No hay sesión guardada",
-          "Iniciá sesión normalmente una vez."
-        );
+      if (!token) {
+        setErrorTitle("⚠️ No hay sesión guardada");
+        setErrorMessage("Iniciá sesión normalmente una vez.");
+        return setShowErrorModal(true);
+      }
       const result = await LocalAuthentication.authenticateAsync({
         promptMessage: "Autenticarse con biometría",
         fallbackLabel: "Usar contraseña",
       });
-      if (!result.success)
-        return Alert.alert(
-          "Autenticación cancelada",
-          "No se pudo verificar tu identidad."
-        );
+      if (!result.success) {
+        setErrorTitle("⚠️ Autenticación cancelada");
+        setErrorMessage("No se pudo verificar tu identidad.");
+        return setShowErrorModal(true);
+      }
       const me = await meRequest();
       if (me?.user) {
         // Inicializar sistema de notificaciones después del login biométrico exitoso
@@ -165,10 +161,9 @@ export default function LoginScreen({ navigation }) {
         navigation.replace("Home");
       } else {
         await storageRemove("token");
-        Alert.alert(
-          "Sesión inválida",
-          "Tu sesión expiró. Iniciá sesión de nuevo."
-        );
+        setErrorTitle("⚠️ Sesión inválida");
+        setErrorMessage("Tu sesión expiró. Iniciá sesión de nuevo.");
+        setShowErrorModal(true);
       }
     } catch (err) {
       const status = err?.response?.status;
@@ -176,12 +171,13 @@ export default function LoginScreen({ navigation }) {
       // Si es 401 o 404, la sesión es inválida
       if (status === 401 || status === 404) {
         await storageRemove("token");
-        Alert.alert(
-          "Sesión inválida",
-          "Tu sesión expiró o el usuario ya no existe. Iniciá sesión de nuevo."
-        );
+        setErrorTitle("⚠️ Sesión inválida");
+        setErrorMessage("Tu sesión expiró o el usuario ya no existe. Iniciá sesión de nuevo.");
+        setShowErrorModal(true);
       } else {
-        Alert.alert("Error", "No se pudo iniciar sesión con biometría.");
+        setErrorTitle("❌ Error");
+        setErrorMessage("No se pudo iniciar sesión con biometría.");
+        setShowErrorModal(true);
       }
     }
   };
@@ -290,6 +286,34 @@ export default function LoginScreen({ navigation }) {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Modal de error */}
+      <Modal
+        visible={showErrorModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowErrorModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalEmoji}>
+              {errorTitle.includes('🔒') ? '🔒' : 
+               errorTitle.includes('⚠️') ? '⚠️' : 
+               errorTitle.includes('📡') ? '📡' : '❌'}
+            </Text>
+            <Text style={styles.modalTitle}>
+              {errorTitle.replace('🔒', '').replace('⚠️', '').replace('📡', '').replace('❌', '').trim()}
+            </Text>
+            <Text style={styles.modalMessage}>{errorMessage}</Text>
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: '#FF5252' }]}
+              onPress={() => setShowErrorModal(false)}
+            >
+              <Text style={styles.modalButtonText}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -381,4 +405,47 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   registerButtonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 24,
+    width: '85%',
+    alignItems: 'center',
+  },
+  modalEmoji: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 15,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  modalButton: {
+    paddingHorizontal: 40,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 120,
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
 });

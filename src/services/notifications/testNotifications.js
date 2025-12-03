@@ -11,7 +11,8 @@ import {
   Alert,
   TextInput,
   ScrollView,
-  ActivityIndicator
+  ActivityIndicator,
+  Modal
 } from 'react-native';
 import { 
   fetchAndShowNotifications, 
@@ -25,6 +26,10 @@ import api from '../../api/client';
 export default function NotificationDebugPanel() {
   const [taskStatus, setTaskStatus] = React.useState('Verificando...');
   const [loading, setLoading] = React.useState(false);
+  const [showModal, setShowModal] = React.useState(false);
+  const [modalTitle, setModalTitle] = React.useState('');
+  const [modalMessage, setModalMessage] = React.useState('');
+  const [modalButtons, setModalButtons] = React.useState([]);
   
   // Estados para los inputs
   const [classId, setClassId] = React.useState('15');
@@ -40,28 +45,35 @@ export default function NotificationDebugPanel() {
     setTaskStatus(isRegistered ? '✅ Registrada' : '❌ No registrada');
   };
 
+  const showModalAlert = (title, message, buttons = [{ text: 'OK' }]) => {
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalButtons(buttons);
+    setShowModal(true);
+  };
+
   const handleCheckPermissions = async () => {
     const { status } = await Notifications.getPermissionsAsync();
-    Alert.alert('Permisos', `Status: ${status}`);
+    showModalAlert('Permisos', `Status: ${status}`);
   };
 
   const handleRegisterTask = async () => {
     const success = await registerBackgroundTask();
     if (success) {
-      Alert.alert('Éxito', 'Background task registrada');
+      showModalAlert('Éxito', 'Background task registrada');
       checkTaskStatus();
     } else {
-      Alert.alert('Error', 'No se pudo registrar la tarea');
+      showModalAlert('Error', 'No se pudo registrar la tarea');
     }
   };
 
   const handleUnregisterTask = async () => {
     const success = await unregisterBackgroundTask();
     if (success) {
-      Alert.alert('Éxito', 'Background task desregistrada');
+      showModalAlert('Éxito', 'Background task desregistrada');
       checkTaskStatus();
     } else {
-      Alert.alert('Error', 'No se pudo desregistrar la tarea');
+      showModalAlert('Error', 'No se pudo desregistrar la tarea');
     }
   };
 
@@ -71,32 +83,32 @@ export default function NotificationDebugPanel() {
   // El backend genera notificaciones class_cancelled para todos los usuarios con reservas
   const handleCancelClass = async () => {
     if (!classId) {
-      Alert.alert('Error', 'Ingresá un ID de clase válido');
+      showModalAlert('Error', 'Ingresá un ID de clase válido');
       return;
     }
 
-    Alert.alert(
+    showModalAlert(
       '⚠️ Confirmar Cancelación',
       `¿Cancelar la clase ${classId}?\n\nEsto:\n• Generará notificaciones para TODOS los usuarios con reservas\n• Cancelará todas las reservas\n• Eliminará la clase del sistema`,
       [
-        { text: 'No', style: 'cancel' },
+        { text: 'No', onPress: () => setShowModal(false) },
         {
           text: 'Sí, cancelar',
-          style: 'destructive',
           onPress: async () => {
+            setShowModal(false);
             try {
               setLoading(true);
               await api.delete(`/classes/${classId}`);
               
-              Alert.alert(
+              showModalAlert(
                 '✅ Clase cancelada',
                 'El backend generó las notificaciones.\n\n👉 Tocá "Consultar notificaciones" para verlas.',
                 [
                   { 
                     text: 'Consultar ahora', 
-                    onPress: () => handleFetchNotifications() 
+                    onPress: () => { setShowModal(false); handleFetchNotifications(); }
                   },
-                  { text: 'OK' }
+                  { text: 'OK', onPress: () => setShowModal(false) }
                 ]
               );
             } catch (error) {
@@ -119,7 +131,7 @@ export default function NotificationDebugPanel() {
                 errorMsg += '\n\nVerificá que:\n• El backend está corriendo\n• La URL es correcta\n• Tenés conexión a internet';
               }
               
-              Alert.alert('❌ Error al Cancelar', errorMsg);
+              showModalAlert('❌ Error al Cancelar', errorMsg);
             } finally {
               setLoading(false);
             }
@@ -133,18 +145,19 @@ export default function NotificationDebugPanel() {
   // El backend genera notificaciones class_rescheduled para todos los usuarios con reservas
   const handleRescheduleClass = async () => {
     if (!classId || !newDate || !newTime) {
-      Alert.alert('Error', 'Completá todos los campos:\n• ID de clase\n• Nueva fecha\n• Nueva hora');
+      showModalAlert('Error', 'Completá todos los campos:\n• ID de clase\n• Nueva fecha\n• Nueva hora');
       return;
     }
 
-    Alert.alert(
+    showModalAlert(
       '📅 Confirmar Reprogramación',
       `¿Reprogramar la clase ${classId}?\n\nNuevo horario:\n${newDate} a las ${newTime}\n\nEsto generará notificaciones para TODOS los usuarios con reservas.`,
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Cancelar', onPress: () => setShowModal(false) },
         {
           text: 'Reprogramar',
           onPress: async () => {
+            setShowModal(false);
             try {
               setLoading(true);
               await api.put(`/classes/${classId}`, {
@@ -152,15 +165,15 @@ export default function NotificationDebugPanel() {
                 hora: newTime,
               });
               
-              Alert.alert(
+              showModalAlert(
                 '✅ Clase reprogramada',
                 'El backend generó las notificaciones.\n\n👉 Tocá "Consultar notificaciones" para verlas.',
                 [
                   { 
                     text: 'Consultar ahora', 
-                    onPress: () => handleFetchNotifications() 
+                    onPress: () => { setShowModal(false); handleFetchNotifications(); }
                   },
-                  { text: 'OK' }
+                  { text: 'OK', onPress: () => setShowModal(false) }
                 ]
               );
             } catch (error) {
@@ -186,7 +199,7 @@ export default function NotificationDebugPanel() {
                 errorMsg += '\n\nVerificá que:\n• El backend está corriendo\n• La URL es correcta\n• Tenés conexión';
               }
               
-              Alert.alert('❌ Error al Reprogramar', errorMsg);
+              showModalAlert('❌ Error al Reprogramar', errorMsg);
             } finally {
               setLoading(false);
             }
@@ -205,12 +218,12 @@ export default function NotificationDebugPanel() {
       console.log('[Test] Notificaciones recibidas:', count);
       
       if (count === 0) {
-        Alert.alert(
+        showModalAlert(
           '📭 Sin notificaciones', 
           'No hay notificaciones pendientes para tu usuario.\n\n💡 Para generar notificaciones:\n\n1️⃣ Asegurate de tener una reserva activa\n2️⃣ Cancelá o reprogramá esa clase\n3️⃣ Consultá nuevamente aquí\n\n⏰ O esperá a tener una clase reservada que empiece en ~1 hora'
         );
       } else {
-        Alert.alert(
+        showModalAlert(
           '✅ Notificaciones recibidas', 
           `Se procesaron ${count} notificación(es).\n\n📱 Revisá tu bandeja de notificaciones del dispositivo.\n\n👆 Tocá una notificación para navegar al detalle.`
         );
@@ -237,7 +250,7 @@ export default function NotificationDebugPanel() {
         errorMsg += '\n\nVerificá los logs de Metro para más detalles';
       }
       
-      Alert.alert('❌ Error al Consultar', errorMsg);
+      showModalAlert('❌ Error al Consultar', errorMsg);
     } finally {
       setLoading(false);
     }
@@ -253,7 +266,7 @@ export default function NotificationDebugPanel() {
       },
       trigger: null,
     });
-    Alert.alert('✅ Prueba local enviada', 'Esta notificación NO usa el backend, es solo para probar que las notificaciones funcionen.');
+    showModalAlert('✅ Prueba local enviada', 'Esta notificación NO usa el backend, es solo para probar que las notificaciones funcionen.');
   };
 
   // 5. Verificar conexión con el backend
@@ -266,7 +279,7 @@ export default function NotificationDebugPanel() {
       const response = await api.get('/classes');
       console.log('[Test] Respuesta del backend:', response.status);
       
-      Alert.alert(
+      showModalAlert(
         '✅ Conexión exitosa',
         `El backend está funcionando correctamente.\n\nStatus: ${response.status}\nClases disponibles: ${response.data?.length || 0}`
       );
@@ -292,13 +305,14 @@ export default function NotificationDebugPanel() {
         errorMsg = '❌ Error desconocido\n\n' + error.message;
       }
       
-      Alert.alert('Error de Conexión', errorMsg);
+      showModalAlert('Error de Conexión', errorMsg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
+    <>
     <ScrollView style={styles.scrollContainer}>
       <View style={styles.container}>
         <Text style={styles.title}>🔔 Centro de Pruebas de Notificaciones</Text>
@@ -490,7 +504,40 @@ export default function NotificationDebugPanel() {
 
         <View style={styles.spacer} />
       </View>
+
+      {/* Modal genérico */}
+      <Modal
+        visible={showModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{modalTitle}</Text>
+            <Text style={styles.modalMessage}>{modalMessage}</Text>
+            <View style={styles.modalButtons}>
+              {modalButtons.map((button, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.modalButton,
+                    button.text === 'No' || button.text === 'Cancelar' ? styles.modalButtonSecondary : styles.modalButtonPrimary
+                  ]}
+                  onPress={() => {
+                    if (button.onPress) button.onPress();
+                    else setShowModal(false);
+                  }}
+                >
+                  <Text style={styles.modalButtonText}>{button.text}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
+    </>
   );
 }
 
@@ -672,6 +719,54 @@ const styles = StyleSheet.create({
   },
   spacer: {
     height: 30,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 24,
+    width: '85%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 15,
+    color: '#666',
+    marginBottom: 24,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'column',
+    gap: 10,
+  },
+  modalButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonPrimary: {
+    backgroundColor: '#4CAF50',
+  },
+  modalButtonSecondary: {
+    backgroundColor: '#999',
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

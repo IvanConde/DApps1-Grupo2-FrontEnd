@@ -1,6 +1,6 @@
 // src/screens/Auth/ForgotPasswordScreen.js
 import React, { useRef, useState } from "react";
-import { View, ScrollView, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { View, ScrollView, StyleSheet, TouchableOpacity, Alert, Modal } from "react-native";
 import { Text, TextInput, Button, HelperText } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 let SecureStore;
@@ -33,6 +33,12 @@ export default function ForgotPasswordScreen({ navigation }) {
   const [errorMsg, setErrorMsg] = useState("");
   const codeRef = useRef(null);
   const passRef = useRef(null);
+  const [showCodeSentModal, setShowCodeSentModal] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [errorTitle, setErrorTitle] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const emailInvalid = email.length > 0 && !/^\S+@\S+\.\S+$/.test(email.trim());
   const canRequest = !!email && !emailInvalid;
@@ -48,28 +54,17 @@ export default function ForgotPasswordScreen({ navigation }) {
     setSubmitting(true);
     try {
       await requestOtp(email.trim()); // /request-otp
-      Alert.alert(
-        "📧 Código enviado",
-        "Revisá tu correo electrónico. El código es válido por 5 minutos.",
-        [{ text: "OK", onPress: () => {
-          setStep("verify");
-          requestAnimationFrame(() => codeRef.current?.focus());
-        }}]
-      );
+      setShowCodeSentModal(true);
     } catch (e) {
       const apiMsg = e?.response?.data?.error || e?.response?.data?.message;
       if (e?.code === 'ECONNABORTED' || e?.code === 'ERR_NETWORK') {
-        Alert.alert(
-          "📡 Error de conexión",
-          "No se pudo conectar con el servidor. Verificá tu conexión a internet.",
-          [{ text: "Reintentar" }]
-        );
+        setErrorTitle("📡 Error de conexión");
+        setErrorMessage("No se pudo conectar con el servidor. Verificá tu conexión a internet.");
+        setShowErrorModal(true);
       } else {
-        Alert.alert(
-          "❌ Error",
-          apiMsg || "No se pudo enviar el código. Intenta nuevamente.",
-          [{ text: "Cerrar" }]
-        );
+        setErrorTitle("❌ Error");
+        setErrorMessage(apiMsg || "No se pudo enviar el código. Intenta nuevamente.");
+        setShowErrorModal(true);
       }
     } finally {
       setSubmitting(false);
@@ -94,17 +89,13 @@ export default function ForgotPasswordScreen({ navigation }) {
       const status = e?.response?.status;
       
       if (status === 400) {
-        Alert.alert(
-          "⏱️ Código inválido",
-          apiMsg || "El código ingresado es incorrecto o expiró. Solicitá uno nuevo.",
-          [{ text: "OK" }]
-        );
+        setErrorTitle("⏱️ Código inválido");
+        setErrorMessage(apiMsg || "El código ingresado es incorrecto o expiró. Solicitá uno nuevo.");
+        setShowErrorModal(true);
       } else {
-        Alert.alert(
-          "❌ Error",
-          apiMsg || "No se pudo verificar el código. Intenta nuevamente.",
-          [{ text: "Cerrar" }]
-        );
+        setErrorTitle("❌ Error");
+        setErrorMessage(apiMsg || "No se pudo verificar el código. Intenta nuevamente.");
+        setShowErrorModal(true);
       }
     } finally {
       setSubmitting(false);
@@ -129,18 +120,12 @@ export default function ForgotPasswordScreen({ navigation }) {
         console.warn('No se pudieron limpiar credenciales guardadas:', cleanupErr?.message || cleanupErr);
       }
       // listo: password cambiada, podemos volver al Login
-      Alert.alert(
-        "✅ Contraseña actualizada",
-        "Tu contraseña fue cambiada exitosamente. Ya podés iniciar sesión.",
-        [{ text: "Ir a Login", onPress: () => navigation.goBack() }]
-      );
+      setShowSuccessModal(true);
     } catch (e) {
       const apiMsg = e?.response?.data?.error || e?.response?.data?.message;
-      Alert.alert(
-        "❌ Error",
-        apiMsg || "No se pudo actualizar la contraseña. Intenta nuevamente.",
-        [{ text: "Cerrar" }]
-      );
+      setErrorTitle("❌ Error");
+      setErrorMessage(apiMsg || "No se pudo actualizar la contraseña. Intenta nuevamente.");
+      setShowErrorModal(true);
     } finally {
       setSubmitting(false);
     }
@@ -292,12 +277,18 @@ export default function ForgotPasswordScreen({ navigation }) {
                 ref={passRef}
                 label="🔒 Nueva contraseña"
                 mode="outlined"
-                secureTextEntry
+                secureTextEntry={!showPassword}
                 value={newPassword}
                 onChangeText={setNewPassword}
                 style={styles.input}
                 outlineColor="#E0E0E0"
                 activeOutlineColor="#4CAF50"
+                right={
+                  <TextInput.Icon
+                    icon={showPassword ? "eye-off" : "eye"}
+                    onPress={() => setShowPassword(!showPassword)}
+                  />
+                }
               />
               <HelperText type="info" visible style={styles.helperText}>
                 Mínimo 6 caracteres
@@ -344,6 +335,90 @@ export default function ForgotPasswordScreen({ navigation }) {
           <Text style={styles.navButtonText}>🔑 Volver al inicio de sesión</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Modal de código enviado */}
+      <Modal
+        visible={showCodeSentModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setShowCodeSentModal(false);
+          setStep("verify");
+          requestAnimationFrame(() => codeRef.current?.focus());
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalEmoji}>📧</Text>
+            <Text style={styles.modalTitle}>Código enviado</Text>
+            <Text style={styles.modalMessage}>Revisá tu correo electrónico. El código es válido por 5 minutos.</Text>
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: '#4CAF50' }]}
+              onPress={() => {
+                setShowCodeSentModal(false);
+                setStep("verify");
+                requestAnimationFrame(() => codeRef.current?.focus());
+              }}
+            >
+              <Text style={styles.modalButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de error */}
+      <Modal
+        visible={showErrorModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowErrorModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalEmoji}>
+              {errorTitle.includes('📡') ? '📡' : errorTitle.includes('⏱️') ? '⏱️' : '❌'}
+            </Text>
+            <Text style={styles.modalTitle}>
+              {errorTitle.replace('📡', '').replace('⏱️', '').replace('❌', '').trim()}
+            </Text>
+            <Text style={styles.modalMessage}>{errorMessage}</Text>
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: '#FF5252' }]}
+              onPress={() => setShowErrorModal(false)}
+            >
+              <Text style={styles.modalButtonText}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de contraseña actualizada */}
+      <Modal
+        visible={showSuccessModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setShowSuccessModal(false);
+          navigation.goBack();
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalEmoji}>✅</Text>
+            <Text style={styles.modalTitle}>Contraseña actualizada</Text>
+            <Text style={styles.modalMessage}>Tu contraseña fue cambiada exitosamente. Ya podés iniciar sesión.</Text>
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: '#4CAF50' }]}
+              onPress={() => {
+                setShowSuccessModal(false);
+                navigation.goBack();
+              }}
+            >
+              <Text style={styles.modalButtonText}>Ir a Login</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -482,5 +557,48 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 24,
+    width: '85%',
+    alignItems: 'center',
+  },
+  modalEmoji: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 15,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  modalButton: {
+    paddingHorizontal: 40,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 120,
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });

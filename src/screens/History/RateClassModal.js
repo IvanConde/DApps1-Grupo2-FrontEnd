@@ -25,6 +25,10 @@ export default function RateClassModal({
   const [loading, setLoading] = useState(false);
   const [existingRating, setExistingRating] = useState(null);
   const [charCount, setCharCount] = useState(0);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     if (visible && historyId) {
@@ -48,34 +52,26 @@ export default function RateClassModal({
 
   const handleSubmit = async () => {
     if (rating === 0) {
-      Alert.alert('Error', 'Por favor selecciona una calificación');
+      setErrorMessage('Por favor seleccioná una calificación');
+      setShowErrorModal(true);
       return;
     }
 
     if (comment.length > 250) {
-      Alert.alert('Error', 'El comentario no puede exceder 250 caracteres');
+      setErrorMessage('El comentario no puede exceder 250 caracteres');
+      setShowErrorModal(true);
       return;
     }
 
     setLoading(true);
     try {
       await createOrUpdateRating(historyId, rating, comment.trim() || null);
-      Alert.alert(
-        '¡Gracias!',
-        existingRating ? 'Tu calificación ha sido actualizada' : 'Tu calificación ha sido guardada',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              if (onRatingSubmitted) onRatingSubmitted();
-              handleClose();
-            }
-          }
-        ]
-      );
+      setSuccessMessage(existingRating ? 'Tu calificación ha sido actualizada' : 'Tu calificación ha sido guardada');
+      setShowSuccessModal(true);
     } catch (error) {
       const errorMsg = error.response?.data?.error || 'Error al guardar la calificación';
-      Alert.alert('Error', errorMsg);
+      setErrorMessage(errorMsg);
+      setShowErrorModal(true);
     } finally {
       setLoading(false);
     }
@@ -114,6 +110,7 @@ export default function RateClassModal({
   if (!classData) return null;
 
   return (
+    <>
     <Modal
       visible={visible}
       animationType="slide"
@@ -227,6 +224,59 @@ export default function RateClassModal({
         </View>
       </KeyboardAvoidingView>
     </Modal>
+
+    {/* Modal de error */}
+    <Modal
+      visible={showErrorModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowErrorModal(false)}
+    >
+      <View style={styles.errorModalOverlay}>
+        <View style={styles.errorModalContent}>
+          <Text style={styles.errorModalEmoji}>❌</Text>
+          <Text style={styles.errorModalTitle}>Error</Text>
+          <Text style={styles.errorModalMessage}>{errorMessage}</Text>
+          <TouchableOpacity
+            style={styles.errorModalButton}
+            onPress={() => setShowErrorModal(false)}
+          >
+            <Text style={styles.errorModalButtonText}>Cerrar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+
+    {/* Modal de éxito */}
+    <Modal
+      visible={showSuccessModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => {
+        setShowSuccessModal(false);
+        if (onRatingSubmitted) onRatingSubmitted();
+        handleClose();
+      }}
+    >
+      <View style={styles.errorModalOverlay}>
+        <View style={styles.errorModalContent}>
+          <Text style={styles.errorModalEmoji}>🎉</Text>
+          <Text style={styles.successModalTitle}>¡Gracias!</Text>
+          <Text style={styles.errorModalMessage}>{successMessage}</Text>
+          <TouchableOpacity
+            style={styles.successModalButton}
+            onPress={() => {
+              setShowSuccessModal(false);
+              if (onRatingSubmitted) onRatingSubmitted();
+              handleClose();
+            }}
+          >
+            <Text style={styles.errorModalButtonText}>OK</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+    </>
   );
 }
 
@@ -334,5 +384,63 @@ const styles = StyleSheet.create({
   skipButtonLabel: {
     color: '#999',
     fontSize: 14,
+  },
+  errorModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorModalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 24,
+    width: '85%',
+    alignItems: 'center',
+  },
+  errorModalEmoji: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  errorModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FF5252',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  successModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  errorModalMessage: {
+    fontSize: 15,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  errorModalButton: {
+    backgroundColor: '#FF5252',
+    paddingHorizontal: 40,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 120,
+  },
+  successModalButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 40,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 120,
+  },
+  errorModalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });

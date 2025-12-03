@@ -14,6 +14,14 @@ const ClassUser = ({ navigation, route }) => {
   const [rescheduleData, setRescheduleData] = useState(null);
   const [showCancelledModal, setShowCancelledModal] = useState(false);
   const [cancelledData, setCancelledData] = useState(null);
+  const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
+  const [cancelItem, setCancelItem] = useState(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showLoadErrorModal, setShowLoadErrorModal] = useState(false);
+  const [loadErrorMessage, setLoadErrorMessage] = useState('');
 
   useEffect(() => {
     loadReservations();
@@ -127,7 +135,8 @@ const ClassUser = ({ navigation, route }) => {
       });
       setReservations(data);
     } catch (e) {
-      Alert.alert('Error', e.message || 'No se pudieron cargar tus reservas');
+      setLoadErrorMessage(e.message || 'No se pudieron cargar tus reservas');
+      setShowLoadErrorModal(true);
     } finally {
       setLoading(false);
     }
@@ -226,35 +235,32 @@ const ClassUser = ({ navigation, route }) => {
     });
   };
   const handleCancel = (item) => {
-    Alert.alert(
-      'Cancelar reserva',
-      `¿Querés cancelar tu reserva para "${item.name}" (${item.sede}) el ${formatDate(item.fecha)} ${formatTime(item.hora)}?`,
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Sí, cancelar',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await cancelReservation(item.reservation_id);
-              Alert.alert('Listo', 'Reserva cancelada');
-              onRefresh();
-            } catch (e) {
-              Alert.alert('Error', e.message || 'No se pudo cancelar la reserva');
-            }
-          },
-        },
-      ]
-    );
+    setCancelItem(item);
+    setShowCancelConfirmModal(true);
+  };
+
+  const confirmCancel = async () => {
+    if (!cancelItem) return;
+    
+    try {
+      setShowCancelConfirmModal(false);
+      await cancelReservation(cancelItem.reservation_id);
+      setSuccessMessage('Reserva cancelada exitosamente');
+      setShowSuccessModal(true);
+      onRefresh();
+    } catch (e) {
+      setErrorMessage(e.message || 'No se pudo cancelar la reserva');
+      setShowErrorModal(true);
+    } finally {
+      setCancelItem(null);
+    }
   };
 
   // Manejar aceptar reprogramación (mantener reserva)
   const handleAcceptReschedule = () => {
     setShowRescheduleModal(false);
-    Alert.alert(
-      '✅ Reserva mantenida', 
-      'Tu reserva se actualizó con el nuevo horario. Revisá tus reservas para ver los detalles.'
-    );
+    setSuccessMessage('Tu reserva se actualizó con el nuevo horario');
+    setShowSuccessModal(true);
     onRefresh();
   };
 
@@ -268,13 +274,12 @@ const ClassUser = ({ navigation, route }) => {
     try {
       await cancelReservation(rescheduleData.reservationId);
       setShowRescheduleModal(false);
-      Alert.alert(
-        'Reserva cancelada',
-        'Has cancelado tu reserva para esta clase reprogramada.'
-      );
+      setSuccessMessage('Has cancelado tu reserva para esta clase reprogramada');
+      setShowSuccessModal(true);
       onRefresh();
     } catch (error) {
-      Alert.alert('Error', error.message || 'No se pudo cancelar la reserva');
+      setErrorMessage(error.message || 'No se pudo cancelar la reserva');
+      setShowErrorModal(true);
       setShowRescheduleModal(false);
     }
   };
@@ -537,6 +542,221 @@ const ClassUser = ({ navigation, route }) => {
                 </View>
               </>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de confirmación de cancelación */}
+      <Modal
+        visible={showCancelConfirmModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCancelConfirmModal(false)}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          <View style={{
+            backgroundColor: '#fff',
+            borderRadius: 12,
+            padding: 25,
+            width: '85%',
+            alignItems: 'center'
+          }}>
+            <Text style={{ fontSize: 48, marginBottom: 10 }}>
+              ⚠️
+            </Text>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>
+              Cancelar reserva
+            </Text>
+            {cancelItem && (
+              <Text style={{ fontSize: 15, color: '#555', marginBottom: 20, textAlign: 'center' }}>
+                ¿Querés cancelar tu reserva para "{cancelItem.name}" ({cancelItem.sede}) el {formatDate(cancelItem.fecha)} {formatTime(cancelItem.hora)}?
+              </Text>
+            )}
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  backgroundColor: '#ccc',
+                  padding: 12,
+                  borderRadius: 8,
+                  marginRight: 10,
+                  alignItems: 'center'
+                }}
+                onPress={() => {
+                  setShowCancelConfirmModal(false);
+                  setCancelItem(null);
+                }}
+              >
+                <Text style={{ color: '#333', fontWeight: 'bold', fontSize: 16 }}>
+                  No
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  backgroundColor: '#FF5252',
+                  padding: 12,
+                  borderRadius: 8,
+                  alignItems: 'center'
+                }}
+                onPress={confirmCancel}
+              >
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
+                  Sí, cancelar
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de éxito */}
+      <Modal
+        visible={showSuccessModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSuccessModal(false)}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          <View style={{
+            backgroundColor: '#fff',
+            borderRadius: 12,
+            padding: 25,
+            width: '85%',
+            alignItems: 'center'
+          }}>
+            <Text style={{ fontSize: 48, marginBottom: 10 }}>
+              ✅
+            </Text>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10, color: '#4CAF50' }}>
+              Listo
+            </Text>
+            <Text style={{ fontSize: 15, color: '#555', marginBottom: 20, textAlign: 'center' }}>
+              {successMessage}
+            </Text>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#4CAF50',
+                padding: 12,
+                borderRadius: 8,
+                width: '100%',
+                alignItems: 'center'
+              }}
+              onPress={() => setShowSuccessModal(false)}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
+                Entendido
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de error */}
+      <Modal
+        visible={showErrorModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowErrorModal(false)}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          <View style={{
+            backgroundColor: '#fff',
+            borderRadius: 12,
+            padding: 25,
+            width: '85%',
+            alignItems: 'center'
+          }}>
+            <Text style={{ fontSize: 48, marginBottom: 10 }}>
+              ❌
+            </Text>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10, color: '#FF5252' }}>
+              Error
+            </Text>
+            <Text style={{ fontSize: 15, color: '#555', marginBottom: 20, textAlign: 'center' }}>
+              {errorMessage}
+            </Text>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#FF5252',
+                padding: 12,
+                borderRadius: 8,
+                width: '100%',
+                alignItems: 'center'
+              }}
+              onPress={() => setShowErrorModal(false)}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
+                Cerrar
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de error de carga */}
+      <Modal
+        visible={showLoadErrorModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowLoadErrorModal(false)}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          <View style={{
+            backgroundColor: '#fff',
+            borderRadius: 12,
+            padding: 25,
+            width: '85%',
+            alignItems: 'center'
+          }}>
+            <Text style={{ fontSize: 48, marginBottom: 10 }}>
+              ❌
+            </Text>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10, color: '#FF5252' }}>
+              Error
+            </Text>
+            <Text style={{ fontSize: 15, color: '#555', marginBottom: 20, textAlign: 'center' }}>
+              {loadErrorMessage}
+            </Text>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#FF5252',
+                padding: 12,
+                borderRadius: 8,
+                width: '100%',
+                alignItems: 'center'
+              }}
+              onPress={() => setShowLoadErrorModal(false)}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
+                Cerrar
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>

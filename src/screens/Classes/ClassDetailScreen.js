@@ -32,9 +32,11 @@ const ClassDetailScreen = ({ route, navigation }) => {
       const data = await getClassById(classId);
       setClassData(data);
     } catch (error) {
-      Alert.alert('Error', 'No se pudo cargar el detalle de la clase');
+      setErrorTitle('❌ Error');
+      setErrorMessage('No se pudo cargar el detalle de la clase');
+      setShowErrorModal(true);
       console.error('Error cargando detalle:', error);
-      navigation.goBack();
+      setTimeout(() => navigation.goBack(), 2000);
     } finally {
       setLoading(false);
     }
@@ -88,10 +90,16 @@ const ClassDetailScreen = ({ route, navigation }) => {
 
 const [showModal, setShowModal] = useState(false);
 const [reserving, setReserving] = useState(false);
+const [showSuccessModal, setShowSuccessModal] = useState(false);
+const [showErrorModal, setShowErrorModal] = useState(false);
+const [errorMessage, setErrorMessage] = useState('');
+const [errorTitle, setErrorTitle] = useState('Error');
 
 const handleReserve = () => {
   if (classData.cupo <= 0) {
-    Alert.alert('Sin cupo disponible', 'No se puede reservar esta clase.');
+    setErrorTitle('⚠️ Sin cupo');
+    setErrorMessage('No se puede reservar esta clase.');
+    setShowErrorModal(true);
     return;
   }
   setShowModal(true);
@@ -101,16 +109,18 @@ const confirmReservation = async () => {
   try {
     setReserving(true);
     const result = await createReservation(classData.id);
-    Alert.alert('✅ Reserva confirmada', 'Tu reserva fue creada exitosamente.');
     setClassData({ ...classData, cupo: result.cupo_restante });
     setHasReservation(true); // Actualizar estado local
+    setShowModal(false);
+    setShowSuccessModal(true); // Mostrar modal de éxito
   } catch (error) {
     // Mostrar mensaje claro; para 409 recibimos Error(message)
     const msg = error?.message || error?.error || 'No se pudo crear la reserva.';
-    Alert.alert('Error', msg);
+    setErrorTitle('❌ Error');
+    setErrorMessage(msg);
+    setShowErrorModal(true);
   } finally {
     setReserving(false);
-    setShowModal(false);
   }
 };
 
@@ -118,18 +128,24 @@ const confirmReservation = async () => {
   const handleShowLocation = async () => {
     const url = classData?.direccion; // nueva columna con la URL del mapa
     if (!url) {
-      Alert.alert('Dirección no disponible', 'Esta clase no tiene enlace de ubicación configurado.');
+      setErrorTitle('📍 Dirección no disponible');
+      setErrorMessage('Esta clase no tiene enlace de ubicación configurado.');
+      setShowErrorModal(true);
       return;
     }
     try {
       const can = await Linking.canOpenURL(url);
       if (!can) {
-        Alert.alert('No se puede abrir', 'Verifica que la URL de la dirección sea válida.');
+        setErrorTitle('⚠️ No se puede abrir');
+        setErrorMessage('Verifica que la URL de la dirección sea válida.');
+        setShowErrorModal(true);
         return;
       }
       await Linking.openURL(url);
     } catch (e) {
-      Alert.alert('Error', 'Ocurrió un problema al abrir el mapa.');
+      setErrorTitle('❌ Error');
+      setErrorMessage('Ocurrió un problema al abrir el mapa.');
+      setShowErrorModal(true);
     }
   };
 
@@ -356,6 +372,102 @@ const confirmReservation = async () => {
               <Text style={{ color: '#333', fontWeight: 'bold' }}>Cancelar</Text>
             </TouchableOpacity>
           </View>
+        </View>
+      </View>
+    </Modal>
+
+    {/* Modal de éxito */}
+    <Modal
+      visible={showSuccessModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowSuccessModal(false)}
+    >
+      <View style={{
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
+        <View style={{
+          backgroundColor: '#fff',
+          borderRadius: 12,
+          padding: 25,
+          width: '85%',
+          alignItems: 'center'
+        }}>
+          <Text style={{ fontSize: 48, marginBottom: 10 }}>
+            ✅
+          </Text>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10, color: '#4CAF50' }}>
+            Reserva confirmada
+          </Text>
+          <Text style={{ fontSize: 15, color: '#555', marginBottom: 20, textAlign: 'center' }}>
+            Tu reserva fue creada exitosamente
+          </Text>
+
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#4CAF50',
+              padding: 12,
+              borderRadius: 8,
+              width: '100%',
+              alignItems: 'center'
+            }}
+            onPress={() => setShowSuccessModal(false)}
+          >
+            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
+              Entendido
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+
+    {/* Modal de error */}
+    <Modal
+      visible={showErrorModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowErrorModal(false)}
+    >
+      <View style={{
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
+        <View style={{
+          backgroundColor: '#fff',
+          borderRadius: 12,
+          padding: 25,
+          width: '85%',
+          alignItems: 'center'
+        }}>
+          <Text style={{ fontSize: 48, marginBottom: 10 }}>
+            {errorTitle.includes('📍') ? '📍' : errorTitle.includes('⚠️') ? '⚠️' : '❌'}
+          </Text>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10, color: '#FF5252' }}>
+            {errorTitle.replace(/[📍⚠️❌]/g, '').trim()}
+          </Text>
+          <Text style={{ fontSize: 15, color: '#555', marginBottom: 20, textAlign: 'center' }}>
+            {errorMessage}
+          </Text>
+
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#FF5252',
+              padding: 12,
+              borderRadius: 8,
+              width: '100%',
+              alignItems: 'center'
+            }}
+            onPress={() => setShowErrorModal(false)}
+          >
+            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
+              Cerrar
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
     </Modal>

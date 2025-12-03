@@ -9,6 +9,7 @@ import {
   Image,
   ScrollView,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -22,6 +23,10 @@ const ProfileScreen = ({ navigation }) => {
   const [user, setUser] = useState(null);
   const [name, setName] = useState('');
   const [photo, setPhoto] = useState(null);
+  const [showImagePickerModal, setShowImagePickerModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     loadProfile();
@@ -35,7 +40,8 @@ const ProfileScreen = ({ navigation }) => {
       setName(userData.name || '');
       setPhoto(userData.photo || null);
     } catch (error) {
-      Alert.alert('Error', 'No se pudo cargar el perfil');
+      setErrorMessage('No se pudo cargar el perfil');
+      setShowErrorModal(true);
       console.error('Error cargando perfil:', error);
     } finally {
       setLoading(false);
@@ -44,7 +50,8 @@ const ProfileScreen = ({ navigation }) => {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'El nombre es requerido');
+      setErrorMessage('El nombre es requerido');
+      setShowErrorModal(true);
       return;
     }
 
@@ -60,7 +67,8 @@ const ProfileScreen = ({ navigation }) => {
           photoUrl = await uploadProfileImage(photo);
         } catch (uploadError) {
           setUploading(false);
-          Alert.alert('Error', 'No se pudo subir la imagen. Intenta nuevamente.');
+          setErrorMessage('No se pudo subir la imagen. Intenta nuevamente.');
+          setShowErrorModal(true);
           return;
         }
         setUploading(false);
@@ -72,12 +80,11 @@ const ProfileScreen = ({ navigation }) => {
         photo: photoUrl
       });
       
-      Alert.alert('Éxito', 'Perfil actualizado correctamente', [
-        { text: 'OK', onPress: () => navigation.goBack() }
-      ]);
+      setShowSuccessModal(true);
       
     } catch (error) {
-      Alert.alert('Error', 'No se pudo actualizar el perfil');
+      setErrorMessage('No se pudo actualizar el perfil');
+      setShowErrorModal(true);
       console.error('Error actualizando perfil:', error);
     } finally {
       setSaving(false);
@@ -93,20 +100,13 @@ const ProfileScreen = ({ navigation }) => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
       if (status !== 'granted') {
-        Alert.alert('Permisos', 'Se necesitan permisos para acceder a la galería');
+        setErrorMessage('Se necesitan permisos para acceder a la galería');
+        setShowErrorModal(true);
         return;
       }
 
       // Mostrar opciones
-      Alert.alert(
-        'Seleccionar imagen',
-        'Elige de dónde quieres obtener la imagen',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Galería', onPress: () => pickImageFromGallery() },
-          { text: 'Cámara', onPress: () => pickImageFromCamera() },
-        ]
-      );
+      setShowImagePickerModal(true);
     } catch (error) {
       console.error('Error al solicitar permisos:', error);
     }
@@ -114,6 +114,7 @@ const ProfileScreen = ({ navigation }) => {
 
   const pickImageFromGallery = async () => {
     try {
+      setShowImagePickerModal(false);
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -126,17 +127,20 @@ const ProfileScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Error al seleccionar imagen:', error);
-      Alert.alert('Error', 'No se pudo seleccionar la imagen');
+      setErrorMessage('No se pudo seleccionar la imagen');
+      setShowErrorModal(true);
     }
   };
 
   const pickImageFromCamera = async () => {
     try {
+      setShowImagePickerModal(false);
       // Solicitar permisos de cámara
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       
       if (status !== 'granted') {
-        Alert.alert('Permisos', 'Se necesitan permisos para acceder a la cámara');
+        setErrorMessage('Se necesitan permisos para acceder a la cámara');
+        setShowErrorModal(true);
         return;
       }
 
@@ -151,7 +155,8 @@ const ProfileScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Error al tomar foto:', error);
-      Alert.alert('Error', 'No se pudo tomar la foto');
+      setErrorMessage('No se pudo tomar la foto');
+      setShowErrorModal(true);
     }
   };
 
@@ -269,6 +274,188 @@ const ProfileScreen = ({ navigation }) => {
         </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Modal de selección de imagen */}
+      <Modal
+        visible={showImagePickerModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowImagePickerModal(false)}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          <View style={{
+            backgroundColor: '#fff',
+            borderRadius: 12,
+            padding: 25,
+            width: '85%',
+            alignItems: 'center'
+          }}>
+            <Text style={{ fontSize: 48, marginBottom: 10 }}>
+              📸
+            </Text>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>
+              Seleccionar imagen
+            </Text>
+            <Text style={{ fontSize: 15, color: '#555', marginBottom: 20, textAlign: 'center' }}>
+              Elige de dónde quieres obtener la imagen
+            </Text>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#4CAF50',
+                padding: 12,
+                borderRadius: 8,
+                width: '100%',
+                alignItems: 'center',
+                marginBottom: 10
+              }}
+              onPress={pickImageFromGallery}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
+                📁 Galería
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#2196F3',
+                padding: 12,
+                borderRadius: 8,
+                width: '100%',
+                alignItems: 'center',
+                marginBottom: 10
+              }}
+              onPress={pickImageFromCamera}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
+                📷 Cámara
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#ccc',
+                padding: 12,
+                borderRadius: 8,
+                width: '100%',
+                alignItems: 'center'
+              }}
+              onPress={() => setShowImagePickerModal(false)}
+            >
+              <Text style={{ color: '#333', fontWeight: 'bold', fontSize: 16 }}>
+                Cancelar
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de éxito */}
+      <Modal
+        visible={showSuccessModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setShowSuccessModal(false);
+          navigation.goBack();
+        }}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          <View style={{
+            backgroundColor: '#fff',
+            borderRadius: 12,
+            padding: 25,
+            width: '85%',
+            alignItems: 'center'
+          }}>
+            <Text style={{ fontSize: 48, marginBottom: 10 }}>
+              ✅
+            </Text>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10, color: '#4CAF50' }}>
+              Perfil actualizado
+            </Text>
+            <Text style={{ fontSize: 15, color: '#555', marginBottom: 20, textAlign: 'center' }}>
+              Tus cambios fueron guardados correctamente
+            </Text>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#4CAF50',
+                padding: 12,
+                borderRadius: 8,
+                width: '100%',
+                alignItems: 'center'
+              }}
+              onPress={() => {
+                setShowSuccessModal(false);
+                navigation.goBack();
+              }}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
+                Entendido
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de error */}
+      <Modal
+        visible={showErrorModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowErrorModal(false)}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          <View style={{
+            backgroundColor: '#fff',
+            borderRadius: 12,
+            padding: 25,
+            width: '85%',
+            alignItems: 'center'
+          }}>
+            <Text style={{ fontSize: 48, marginBottom: 10 }}>
+              ❌
+            </Text>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10, color: '#FF5252' }}>
+              Error
+            </Text>
+            <Text style={{ fontSize: 15, color: '#555', marginBottom: 20, textAlign: 'center' }}>
+              {errorMessage}
+            </Text>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#FF5252',
+                padding: 12,
+                borderRadius: 8,
+                width: '100%',
+                alignItems: 'center'
+              }}
+              onPress={() => setShowErrorModal(false)}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
+                Cerrar
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
     </SafeAreaView>
   );
