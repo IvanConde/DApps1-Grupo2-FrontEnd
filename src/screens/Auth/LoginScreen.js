@@ -100,15 +100,37 @@ export default function LoginScreen({ navigation }) {
     } catch (err) {
       const status = err?.response?.status;
       const apiMsg = err?.response?.data?.message || err?.response?.data?.error;
+      
       if (status === 401) {
-        setErrorMsg(apiMsg || "Email o contraseña incorrectos.");
+        // Credenciales incorrectas - mostrar alert bonito
+        Alert.alert(
+          "🔒 Acceso denegado",
+          apiMsg || "Email o contraseña incorrectos. Por favor verificá tus datos.",
+          [{ text: "Entendido", style: "default" }]
+        );
         setPassword("");
         requestAnimationFrame(() => passwordRef.current?.focus());
       } else if (status === 403) {
-        // Previously this redirected to VerifyOtp. Now we show a clear message
-        setErrorMsg(apiMsg || "Tu cuenta requiere verificación. Revisa tu correo para el código.");
+        // Cuenta no verificada
+        Alert.alert(
+          "⚠️ Verificación requerida",
+          apiMsg || "Tu cuenta requiere verificación. Revisa tu correo para el código.",
+          [{ text: "OK", style: "default" }]
+        );
+      } else if (err?.code === 'ECONNABORTED' || err?.code === 'ERR_NETWORK') {
+        // Error de conexión
+        Alert.alert(
+          "📡 Error de conexión",
+          "No se pudo conectar con el servidor. Verificá tu conexión a internet.",
+          [{ text: "Reintentar", style: "default" }]
+        );
       } else {
-        setErrorMsg(apiMsg || "Ocurrió un error al iniciar sesión.");
+        // Otros errores
+        Alert.alert(
+          "❌ Error",
+          apiMsg || "Ocurrió un error al iniciar sesión. Intenta nuevamente.",
+          [{ text: "Cerrar", style: "cancel" }]
+        );
       }
     } finally {
       setSubmitting(false);
@@ -149,8 +171,18 @@ export default function LoginScreen({ navigation }) {
         );
       }
     } catch (err) {
-      console.error("Biometric login error:", err);
-      Alert.alert("Error", "No se pudo iniciar sesión con biometría.");
+      const status = err?.response?.status;
+      
+      // Si es 401 o 404, la sesión es inválida
+      if (status === 401 || status === 404) {
+        await storageRemove("token");
+        Alert.alert(
+          "Sesión inválida",
+          "Tu sesión expiró o el usuario ya no existe. Iniciá sesión de nuevo."
+        );
+      } else {
+        Alert.alert("Error", "No se pudo iniciar sesión con biometría.");
+      }
     }
   };
 

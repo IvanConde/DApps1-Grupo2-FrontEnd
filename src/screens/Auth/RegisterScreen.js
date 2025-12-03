@@ -1,6 +1,6 @@
 // src/screens/Auth/RegisterScreen.js
 import React, { useState, useRef, useEffect } from "react";
-import { View, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
+import { View, ScrollView, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Text,
@@ -76,17 +76,40 @@ export default function RegisterScreen({ navigation }) {
         password,
       });
       // Don't store token yet. Require OTP verification after registration.
-      setSnackbarMsg("Se envió un código de verificación a tu correo.");
-      setSnackbarVisible(true);
-      navigation.replace("VerifyOtp", { email: email.trim() });
+      Alert.alert(
+        "✅ Registro exitoso",
+        "Se envió un código de verificación a tu correo. Revisá tu bandeja de entrada.",
+        [{ text: "Continuar", onPress: () => navigation.replace("VerifyOtp", { email: email.trim() }) }]
+      );
     } catch (err) {
       const status = err?.response?.status;
       const apiMsg = err?.response?.data?.message || err?.response?.data?.error;
-      if (status === 409)
-        setErrorMsg(apiMsg || "Ese email ya está registrado.");
-      else if (status === 400)
-        setErrorMsg(apiMsg || "Datos inválidos para registrarse.");
-      else setErrorMsg(apiMsg || "No se pudo completar el registro.");
+      
+      if (status === 409) {
+        Alert.alert(
+          "⚠️ Email en uso",
+          apiMsg || "Ese email ya está registrado. Intentá iniciar sesión.",
+          [{ text: "OK" }]
+        );
+      } else if (status === 400) {
+        Alert.alert(
+          "❌ Datos inválidos",
+          apiMsg || "Los datos ingresados no son válidos. Revisá e intentá nuevamente.",
+          [{ text: "Corregir" }]
+        );
+      } else if (err?.code === 'ECONNABORTED' || err?.code === 'ERR_NETWORK') {
+        Alert.alert(
+          "📡 Error de conexión",
+          "No se pudo conectar con el servidor. Verificá tu conexión a internet.",
+          [{ text: "Reintentar" }]
+        );
+      } else {
+        Alert.alert(
+          "❌ Error",
+          apiMsg || "No se pudo completar el registro. Intenta nuevamente.",
+          [{ text: "Cerrar" }]
+        );
+      }
     } finally {
       setSubmitting(false);
     }

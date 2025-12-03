@@ -1,6 +1,6 @@
 // src/screens/Auth/ForgotPasswordScreen.js
 import React, { useRef, useState } from "react";
-import { View, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
+import { View, ScrollView, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { Text, TextInput, Button, HelperText } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 let SecureStore;
@@ -48,10 +48,29 @@ export default function ForgotPasswordScreen({ navigation }) {
     setSubmitting(true);
     try {
       await requestOtp(email.trim()); // /request-otp
-      setStep("verify");
-      requestAnimationFrame(() => codeRef.current?.focus());
+      Alert.alert(
+        "📧 Código enviado",
+        "Revisá tu correo electrónico. El código es válido por 5 minutos.",
+        [{ text: "OK", onPress: () => {
+          setStep("verify");
+          requestAnimationFrame(() => codeRef.current?.focus());
+        }}]
+      );
     } catch (e) {
-      setErrorMsg(e?.response?.data?.error || e?.message || "No se pudo enviar el código.");
+      const apiMsg = e?.response?.data?.error || e?.response?.data?.message;
+      if (e?.code === 'ECONNABORTED' || e?.code === 'ERR_NETWORK') {
+        Alert.alert(
+          "📡 Error de conexión",
+          "No se pudo conectar con el servidor. Verificá tu conexión a internet.",
+          [{ text: "Reintentar" }]
+        );
+      } else {
+        Alert.alert(
+          "❌ Error",
+          apiMsg || "No se pudo enviar el código. Intenta nuevamente.",
+          [{ text: "Cerrar" }]
+        );
+      }
     } finally {
       setSubmitting(false);
     }
@@ -71,8 +90,22 @@ export default function ForgotPasswordScreen({ navigation }) {
       setStep("reset");
       requestAnimationFrame(() => passRef.current?.focus());
     } catch (e) {
-      const msg = e?.response?.data?.error || e?.message || "Código inválido o expirado.";
-      setErrorMsg(msg);
+      const apiMsg = e?.response?.data?.error || e?.response?.data?.message;
+      const status = e?.response?.status;
+      
+      if (status === 400) {
+        Alert.alert(
+          "⏱️ Código inválido",
+          apiMsg || "El código ingresado es incorrecto o expiró. Solicitá uno nuevo.",
+          [{ text: "OK" }]
+        );
+      } else {
+        Alert.alert(
+          "❌ Error",
+          apiMsg || "No se pudo verificar el código. Intenta nuevamente.",
+          [{ text: "Cerrar" }]
+        );
+      }
     } finally {
       setSubmitting(false);
     }
@@ -96,10 +129,18 @@ export default function ForgotPasswordScreen({ navigation }) {
         console.warn('No se pudieron limpiar credenciales guardadas:', cleanupErr?.message || cleanupErr);
       }
       // listo: password cambiada, podemos volver al Login
-      navigation.goBack();
+      Alert.alert(
+        "✅ Contraseña actualizada",
+        "Tu contraseña fue cambiada exitosamente. Ya podés iniciar sesión.",
+        [{ text: "Ir a Login", onPress: () => navigation.goBack() }]
+      );
     } catch (e) {
-      const msg = e?.response?.data?.error || e?.message || "No se pudo actualizar la contraseña.";
-      setErrorMsg(msg);
+      const apiMsg = e?.response?.data?.error || e?.response?.data?.message;
+      Alert.alert(
+        "❌ Error",
+        apiMsg || "No se pudo actualizar la contraseña. Intenta nuevamente.",
+        [{ text: "Cerrar" }]
+      );
     } finally {
       setSubmitting(false);
     }

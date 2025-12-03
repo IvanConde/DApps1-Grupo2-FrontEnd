@@ -1,5 +1,6 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_BASE_URL } from '@env';
 
 let SecureStore;
 try {
@@ -9,8 +10,10 @@ try {
 }
 
 const api = axios.create({
-  baseURL: "http://192.168.0.20:4000/api", // <- reemplazá TU_IP_LOCAL si hace falta
+  baseURL: API_BASE_URL || "http://192.168.0.158:4000/api", // Fallback si no hay .env
   timeout: 5000,
+  // Evitar que axios muestre warnings en consola
+  validateStatus: (status) => status < 600, // Acepta cualquier status < 600
 });
 
 async function getToken() {
@@ -35,5 +38,44 @@ api.interceptors.request.use(async (config) => {
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+
+// Interceptor de respuesta para convertir errores HTTP en rechazos controlados
+api.interceptors.response.use(
+  (response) => {
+    // Si el status es error pero validateStatus lo aceptó, lo convertimos en rechazo
+    if (response.status >= 400) {
+      const error = new Error(response.data?.message || response.data?.error || 'Request failed');
+      error.response = response;
+      error.config = response.config;
+      
+      // No logear errores esperados
+      const expectedErrors = [400, 401, 403, 404, 409];
+      if (!expectedErrors.includes(response.status)) {
+        console.error('[API Error]', {
+          url: response.config?.url,
+          status: response.status,
+          message: response.data?.error || response.data?.message
+        });
+      }
+      
+      return Promise.reject(error);
+    }
+    return response;
+  },
+  (error) => {
+    // Errores de red o timeouts
+    if (error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK') {
+      console.error('[API Network Error]', {
+        code: error.code,
+        message: error.message
+      });
+    } else {
+      // Otros errores inesperados
+      console.error('[API Unexpected Error]', error.message);
+    }
+    
+    return Promise.reject(error);
+  }
+);
 
 export default api;

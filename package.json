@@ -1,5 +1,5 @@
 {
-  "name": "my-app",
+  "name": "ritmofit",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -38,6 +38,7 @@
   },
   "private": true,
   "devDependencies": {
-    "@react-native-community/cli": "^20.0.2"
+    "@react-native-community/cli": "^20.0.2",
+    "react-native-dotenv": "^3.4.11"
   }
 }
