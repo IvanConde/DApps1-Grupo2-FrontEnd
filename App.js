@@ -1,6 +1,6 @@
 // App.js
 import React, { useEffect, useRef } from "react";
-import {SafeAreaProvider} from "react-native-safe-area-context";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Provider as PaperProvider } from "react-native-paper";
 import { NavigationContainer } from "@react-navigation/native";
 import AppNavigator from "./src/navigation/AppNavigator";
@@ -13,9 +13,23 @@ import {
   startNotificationPolling,
   stopNotificationPolling,
 } from "./src/services/notifications";
+import { ConnectivityProvider, useConnectivity } from "./src/context/ConnectivityContext";
+import OfflineScreen from "./src/screens/Offline/OfflineScreen";
 
-export default function App() {
-  const navigationRef = useRef(null);
+const AppContent = ({ navigationRef }) => {
+  const { isOffline, retryBackendConnection, checkingBackend } = useConnectivity();
+  const wasOfflineRef = useRef(false);
+
+  // Detectar cuando se recupera la conexión y navegar a Home
+  useEffect(() => {
+    if (wasOfflineRef.current && !isOffline) {
+      // Se recuperó la conexión - navegar a Home
+      if (navigationRef.current) {
+        navigationRef.current.navigate('Home');
+      }
+    }
+    wasOfflineRef.current = isOffline;
+  }, [isOffline, navigationRef]);
 
   useEffect(() => {
     const ASKED_FLAG = "askedPermissionsV3"; // cambialo si necesitás re-preguntar en una futura versión
@@ -77,14 +91,32 @@ export default function App() {
       // Detener polling al cerrar la app
       stopNotificationPolling();
     };
-  }, []);
+  }, [navigationRef]);
+
+  return (
+    <>
+      <NavigationContainer ref={navigationRef}>
+        <AppNavigator />
+      </NavigationContainer>
+      {isOffline && (
+        <OfflineScreen
+          checking={checkingBackend}
+          onRetry={retryBackendConnection}
+        />
+      )}
+    </>
+  );
+};
+
+export default function App() {
+  const navigationRef = useRef(null);
 
   return (
     <PaperProvider>
       <SafeAreaProvider>
-      <NavigationContainer ref={navigationRef}>
-        <AppNavigator />
-      </NavigationContainer>
+        <ConnectivityProvider>
+          <AppContent navigationRef={navigationRef} />
+        </ConnectivityProvider>
       </SafeAreaProvider>
     </PaperProvider>
   );

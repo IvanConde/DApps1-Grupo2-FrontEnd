@@ -42,7 +42,11 @@ export default function HomeScreen({ navigation }) {
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
 
   useEffect(() => {
-    loadTodaysClasses();
+    const loadData = async () => {
+      setLoading(true);
+      await loadTodaysClasses();
+    };
+    loadData();
     
     // Actualizar fecha/hora cada segundo
     const interval = setInterval(() => {
@@ -55,6 +59,7 @@ export default function HomeScreen({ navigation }) {
   // Refrescar clases al volver a enfocar la pantalla Home
   useFocusEffect(
     React.useCallback(() => {
+      // Siempre recargar cuando se enfoca la pantalla
       setLoading(true);
       loadTodaysClasses();
     }, [])
@@ -73,7 +78,7 @@ export default function HomeScreen({ navigation }) {
       const classes = await getClasses(filters);
       setTodaysClasses(classes.slice(0, 3)); // Solo mostrar las primeras 3
     } catch (error) {
-      console.error('Error cargando clases del día:', error);
+      // Error manejado por ConnectivityContext - no loguear aquí
     } finally {
       setLoading(false);
     }

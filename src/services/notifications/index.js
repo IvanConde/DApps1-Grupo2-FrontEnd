@@ -118,8 +118,12 @@ export async function fetchAndShowNotifications() {
     console.log(`[Notifications] 🎯 Total mostradas: ${shown}/${notifications.length}`);
     return notifications.length;
   } catch (error) {
-    console.error('[Notifications] ❌ Error fetching notifications:', error);
-    console.error('[Notifications] Error details:', error.response?.data);
+    if (error.code === 'ERR_NETWORK') {
+      console.log('[Notifications] 🌐 Sin conexión, reintentaremos automáticamente');
+    } else {
+      console.error('[Notifications] ❌ Error fetching notifications:', error);
+      console.error('[Notifications] Error details:', error.response?.data);
+    }
     // No lanzamos error para que el background task no falle
     return 0;
   }

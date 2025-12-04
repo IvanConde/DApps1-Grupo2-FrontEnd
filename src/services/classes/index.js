@@ -15,7 +15,7 @@ export const getClasses = async (filters = {}) => {
     const response = await client.get(url);
     return response.data;
   } catch (error) {
-    console.error('Error obteniendo clases:', error);
+    // Error manejado por interceptor de axios - no loguear aquí
     throw error;
   }
 };
@@ -38,7 +38,7 @@ export const getDisciplines = async () => {
     const disciplines = [...new Set(classes.map(c => c.discipline))].filter(Boolean);
     return disciplines;
   } catch (error) {
-    console.error('Error obteniendo disciplinas:', error);
+    // Error manejado por interceptor - retornar array vacío
     return [];
   }
 };
@@ -50,7 +50,7 @@ export const getSedes = async () => {
     const sedes = [...new Set(classes.map(c => c.sede))].filter(Boolean);
     return sedes;
   } catch (error) {
-    console.error('Error obteniendo sedes:', error);
+    // Error manejado por interceptor - retornar array vacío
     return [];
   }
 };

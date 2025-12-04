@@ -95,8 +95,7 @@ const ClassesScreen = ({ navigation }) => {
       setDisciplines(disciplinesData);
       setSedes(sedesData);
     } catch (error) {
-      Alert.alert("Error", "No se pudieron cargar las clases");
-      console.error("Error cargando datos:", error);
+      // Error manejado por ConnectivityContext - no loguear aquí
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,7 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from '@env';
+import { notifyBackendOffline, notifyBackendOnline } from "../utils/networkEvents";
 
 let SecureStore;
 try {
@@ -48,30 +49,31 @@ api.interceptors.response.use(
       error.response = response;
       error.config = response.config;
       
-      // No logear errores esperados
-      const expectedErrors = [400, 401, 403, 404, 409];
-      if (!expectedErrors.includes(response.status)) {
-        console.error('[API Error]', {
+      // No logear errores HTTP esperados ni errores de autenticación
+      // Solo loguear errores inesperados del servidor (500+)
+      if (response.status >= 500) {
+        console.error('[API Server Error]', {
           url: response.config?.url,
           status: response.status,
           message: response.data?.error || response.data?.message
         });
       }
       
-      return Promise.reject(error);
+        notifyBackendOnline();
+        return Promise.reject(error);
     }
+    notifyBackendOnline();
     return response;
   },
   (error) => {
     // Errores de red o timeouts
     if (error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK') {
-      console.error('[API Network Error]', {
-        code: error.code,
-        message: error.message
-      });
+      // Error de red esperado - no loguear para evitar ruido en consola
+      notifyBackendOffline();
     } else {
-      // Otros errores inesperados
+      // Otros errores inesperados sí se loguean
       console.error('[API Unexpected Error]', error.message);
+      notifyBackendOnline();
     }
     
     return Promise.reject(error);

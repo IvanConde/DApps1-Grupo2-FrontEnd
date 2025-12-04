@@ -15,7 +15,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
 import { getHistory } from '../../services/history';
 import RateClassModal from './RateClassModal';
-import { fetchAndShowNotifications } from '../../services/notifications';
 
 // Helpers para parsear y formatear YYYY-MM-DD sin introducir desplazamientos de zona horaria
 const parseYMD = (dateString) => {
@@ -495,28 +494,6 @@ const HistoryScreen = ({ navigation }) => {
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity
-              style={styles.debugButton}
-              onPress={async () => {
-                Alert.alert('🔔 Verificando...', 'Consultando notificaciones del servidor...');
-                try {
-                  const count = await fetchAndShowNotifications();
-                  Alert.alert(
-                    '✅ Consulta completa',
-                    count > 0 
-                      ? `Se mostraron ${count} notificación(es)` 
-                      : 'No hay notificaciones pendientes'
-                  );
-                  // Recargar historial para actualizar el estado can_rate
-                  loadHistory();
-                } catch (error) {
-                  Alert.alert('❌ Error', 'No se pudieron consultar las notificaciones');
-                  console.error(error);
-                }
-              }}
-            >
-              <Text style={styles.debugButtonText}>🔔</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
               style={styles.filterButton}
               onPress={() => setShowFilters(true)}
             >
@@ -622,17 +599,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#fff',
-  },
-  debugButton: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-    minWidth: 40,
-    alignItems: 'center',
-  },
-  debugButtonText: {
-    fontSize: 18,
   },
   filterButton: {
     backgroundColor: 'rgba(255,255,255,0.2)',
