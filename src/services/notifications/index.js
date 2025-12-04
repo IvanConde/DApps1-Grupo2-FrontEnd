@@ -183,11 +183,7 @@ export function setupNotificationResponseListener(navigationRef) {
       console.log('[Notifications] Usuario tocó notificación:', data);
       
       // Navegar según el tipo de notificación
-      if (data.type === 'rate_class' && data.historyId) {
-        // Para notificaciones de calificar clase, ir directamente al historial
-        // El HistoryScreen mostrará el botón de calificación si es elegible
-        navigationRef.current?.navigate('History');
-      } else if (data.type === 'class_reminder') {
+      if (data.type === 'class_reminder') {
         // Notificación de recordatorio de 1 hora antes -> ir a Mis Reservas
         navigationRef.current?.navigate('MyReservations', {
           highlightReservationId: data.reservationId,
