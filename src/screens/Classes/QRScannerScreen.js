@@ -48,35 +48,59 @@ const QRScannerScreen = ({ navigation, route }) => {
         return;
       }
 
-      // Intentar obtener nombre de clase por ID para validar que existe
+      // Intentar obtener clase por ID y validar que los datos coinciden
       try {
         if (parsedData.classId) {
           const cls = await getClassById(parsedData.classId);
-          if (cls?.name) {
-            setClassNameById(cls.name);
-            // Clase válida, mostrar modal de confirmación
-            setQrData(parsedData);
-            setShowConfirmModal(true);
-          } else {
+          if (!cls?.name) {
             // Clase sin nombre, rechazar
-            setScanned(false);
             Alert.alert(
               'Clase no válida',
               'El código QR no corresponde a una clase válida en el sistema.',
-              [{ text: 'Entendido', onPress: () => setScanned(false) }]
+              [{ 
+                text: 'Entendido', 
+                onPress: () => {
+                  setTimeout(() => setScanned(false), 2000);
+                }
+              }]
             );
+            return;
           }
+
+          // Validar que los datos del QR coinciden con los de la clase en DB
+          const qrFecha = parsedData.fecha.split('T')[0]; // YYYY-MM-DD
+          const clsFecha = cls.fecha.split('T')[0]; // YYYY-MM-DD
+          const qrHora = parsedData.hora.substring(0, 5); // HH:MM
+          const clsHora = cls.hora.substring(0, 5); // HH:MM
+          
+          if (qrFecha !== clsFecha || qrHora !== clsHora || parsedData.sede !== cls.sede) {
+            // Datos no coinciden
+            Alert.alert(
+              'QR No Válido',
+              `Los datos del QR no coinciden con la clase registrada.\n\n`,
+              [{ 
+                text: 'Entendido', 
+                onPress: () => {
+                  setTimeout(() => setScanned(false), 2000);
+                }
+              }]
+            );
+            return;
+          }
+
+          // Todo válido, mostrar modal de confirmación
+          setClassNameById(cls.name);
+          setQrData(parsedData);
+          setShowConfirmModal(true);
         }
       } catch (e) {
         // Error obteniendo clase (404 u otro), no es válida
-        // NO resetear scanned=false aquí para evitar escaneos repetidos
         Alert.alert(
           'Clase no válida',
           'El código QR escaneado no corresponde a una clase activa en el sistema.',
           [{ 
             text: 'Entendido', 
             onPress: () => {
-              // Delay de 2 segundos antes de permitir escanear de nuevo
               setTimeout(() => setScanned(false), 2000);
             }
           }]
