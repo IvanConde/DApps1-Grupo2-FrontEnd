@@ -118,7 +118,8 @@ export default function RateClassModal({
       onRequestClose={handleClose}
     >
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'position' : 'padding'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
         style={styles.modalOverlay}
       >
         <View style={styles.modalContent}>
@@ -133,7 +134,11 @@ export default function RateClassModal({
             />
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView 
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'none'}
+          >
             <View style={styles.classInfo}>
               <Text style={styles.className}>✨ {classData.name}</Text>
               <Text style={styles.classDetails}>
