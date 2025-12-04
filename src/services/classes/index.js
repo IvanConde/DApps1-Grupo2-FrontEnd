@@ -26,7 +26,7 @@ export const getClassById = async (classId) => {
     const response = await client.get(`/classes/${classId}`);
     return response.data;
   } catch (error) {
-    console.error('Error obteniendo detalle de clase:', error);
+    // No loggear error para evitar ruido en consola cuando la clase no existe
     throw error;
   }
 };

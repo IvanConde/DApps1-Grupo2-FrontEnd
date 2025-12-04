@@ -34,22 +34,53 @@ const QRScannerScreen = ({ navigation, route }) => {
       
       // Validar que tenga los campos necesarios
       if (!parsedData.classId || !parsedData.fecha || !parsedData.hora || !parsedData.sede) {
-        Alert.alert('QR Inválido', 'El código QR no contiene los datos correctos');
-        setScanned(false);
+        Alert.alert(
+          'QR Inválido', 
+          'El código QR no contiene los datos correctos',
+          [{ 
+            text: 'Entendido', 
+            onPress: () => {
+              // Delay de 2 segundos antes de permitir escanear de nuevo
+              setTimeout(() => setScanned(false), 2000);
+            }
+          }]
+        );
         return;
       }
 
-      // Guardar datos y mostrar modal de confirmación
-      setQrData(parsedData);
-      setShowConfirmModal(true);
-      // Intentar obtener nombre de clase por ID para mostrarlo correctamente
+      // Intentar obtener nombre de clase por ID para validar que existe
       try {
         if (parsedData.classId) {
           const cls = await getClassById(parsedData.classId);
-          if (cls?.name) setClassNameById(cls.name);
+          if (cls?.name) {
+            setClassNameById(cls.name);
+            // Clase válida, mostrar modal de confirmación
+            setQrData(parsedData);
+            setShowConfirmModal(true);
+          } else {
+            // Clase sin nombre, rechazar
+            setScanned(false);
+            Alert.alert(
+              'Clase no válida',
+              'El código QR no corresponde a una clase válida en el sistema.',
+              [{ text: 'Entendido', onPress: () => setScanned(false) }]
+            );
+          }
         }
       } catch (e) {
-        // No bloquear por error de lookup, dejamos nombre del QR
+        // Error obteniendo clase (404 u otro), no es válida
+        // NO resetear scanned=false aquí para evitar escaneos repetidos
+        Alert.alert(
+          'Clase no válida',
+          'El código QR escaneado no corresponde a una clase activa en el sistema.',
+          [{ 
+            text: 'Entendido', 
+            onPress: () => {
+              // Delay de 2 segundos antes de permitir escanear de nuevo
+              setTimeout(() => setScanned(false), 2000);
+            }
+          }]
+        );
       }
       
     } catch (error) {
