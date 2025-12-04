@@ -88,7 +88,7 @@ const ClassUser = ({ navigation, route }) => {
       // Marcar como expiradas las clases donde pasó la ventana de QR sin confirmar asistencia
       const now = new Date();
       data.forEach(item => {
-        if (item.status === 'confirmada' && item.attendance_status !== 'attended') {
+        if (item.status === 'expirada' && item.attendance_status === 'not_attended') {
           try {
             const fechaClaseISO = item.fecha || item.class?.fecha;
             const horaClase = item.hora || item.class?.hora;
