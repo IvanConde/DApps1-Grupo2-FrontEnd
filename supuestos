@@ -5,3 +5,4 @@
 5. Posterior a 30 minutos de arrancada una clase, si no se escaneo el QR, esta figurara como expirada.
 6. Las clases las cancelamos y reprogramamos mediante endpoints en el back, los cuales creamos una UI de testeo opcional para provocar estos eventos desde el front.
 7. Las notificaciones se refrescan cada 1 minuto, en background, cada 15m.
+8. 8. Al cancelar una clase, el usuario podra volver a reservar la misma (si se encuentra dentro del tiempo estipulado). El registro de la reserva anterior (la cancelada) permanecera en el apartado de "mis reservas" a modo de registro para el usuario y una nueva reserva será creada conforme a la nueva petición del usuario.

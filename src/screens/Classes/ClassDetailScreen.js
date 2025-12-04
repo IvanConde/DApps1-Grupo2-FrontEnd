@@ -46,7 +46,10 @@ const ClassDetailScreen = ({ route, navigation }) => {
     try {
       const myReservations = await getMyReservations();
       // Comparamos con el ID de la clase (que viene como 'id' en las reservas)
-      const hasReserved = myReservations.some(reservation => reservation.id === parseInt(classId));
+      // SOLO consideramos reservas activas (ignorando canceladas)
+      const hasReserved = myReservations.some(reservation => 
+        reservation.id === parseInt(classId) && reservation.status !== 'cancelada'
+      );
       setHasReservation(hasReserved);
     } catch (error) {
       console.error('Error verificando reservas:', error);
