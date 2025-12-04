@@ -5,3 +5,4 @@
 5. Posterior a 30 minutos de arrancada una clase, si no se escaneo el QR, esta figurara como expirada.
 6. Las clases las cancelamos y reprogramamos mediante endpoints en el back, los cuales creamos una UI de testeo opcional para provocar estos eventos desde el front.
 7. Las notificaciones se refrescan cada 1 minuto, en background, cada 15m.
+8. Posterior a 24hs de una clase asistida se entregara una notificacion avisando que ya se puede calificar al profesor/clase.

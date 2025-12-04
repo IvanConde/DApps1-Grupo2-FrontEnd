@@ -67,10 +67,8 @@ export default function HomeScreen({ navigation }) {
       const year = today.getFullYear();
       const month = String(today.getMonth() + 1).padStart(2, '0');
       const day = String(today.getDate()).padStart(2, '0');
-      const localDate = `${year}-${month}-${day}`;
-      
-      console.log('[HomeScreen] Fecha local del dispositivo:', localDate);
-      
+      const localDate = `${year}-${month}-${day}`;  
+          
       const filters = { fecha: localDate };
       const classes = await getClasses(filters);
       setTodaysClasses(classes.slice(0, 3)); // Solo mostrar las primeras 3
