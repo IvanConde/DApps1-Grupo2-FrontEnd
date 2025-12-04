@@ -757,7 +757,7 @@ const ClassesScreen = ({ navigation }) => {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#f5f5f5' },
+  safeArea: { flex: 1, backgroundColor: '#4CAF50' },
   container: { flex: 1, backgroundColor: "#f5f5f5" },
   loadingContainer: {
     flex: 1,
