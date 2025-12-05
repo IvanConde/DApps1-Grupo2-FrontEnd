@@ -1,3 +1,14 @@
+/**
+ * ClassDetailScreen.js
+ * 
+ * Pantalla de detalle de una clase individual del catálogo.
+ * Muestra información completa de la clase y permite:
+ * - Ver detalles (profesor, sede, horario, cupo)
+ * - Crear nueva reserva (si hay cupo y no tiene reserva activa)
+ * - Abrir ubicación en Google Maps
+ * - Navegar de vuelta al catálogo o a "Mis Reservas"
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Modal } from 'react-native';
 import { createReservation, getMyReservations } from '../../services/reservations';
@@ -16,16 +27,24 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getClassById } from '../../services/classes';
 
 const ClassDetailScreen = ({ route, navigation }) => {
+  // Parámetro de navegación para saber si vengo de reservas o catalogo
   const { classId, fromMyReservations } = route.params || {};
   const [classData, setClassData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hasReservation, setHasReservation] = useState(false);
 
-  useEffect(() => {
-    loadClassDetail();
-    checkExistingReservation();
-  }, [classId]);
 
+  useEffect(() => {
+    loadClassDetail();              // Cargar detalle de la clase desde API
+    checkExistingReservation();     // Verificar si ya tiene reserva activa
+  }, [classId]); // Se re-ejecuta si cambia el ID de clase
+
+  /**
+   * Carga el detalle de la clase desde el backend
+   * GET /classes/:id
+   * 
+   * Si falla, muestra modal de error y vuelve atrás después de 2 segundos
+   */
   const loadClassDetail = async () => {
     try {
       setLoading(true);
@@ -42,24 +61,36 @@ const ClassDetailScreen = ({ route, navigation }) => {
     }
   };
 
+  /**
+   * Verifica si el usuario ya tiene una reserva activa para esta clase
+   * GET /reservations/me
+   * 
+   * Filtra solo reservas con status !== 'cancelada'
+   * Esto permite que después de cancelar, se pueda volver a reservar la misma clase
+   * 
+   */
   const checkExistingReservation = async () => {
     try {
       const myReservations = await getMyReservations();
-      // Comparamos con el ID de la clase (que viene como 'id' en las reservas)
-      // SOLO consideramos reservas activas (ignorando canceladas)
+      
       const hasReserved = myReservations.some(reservation => 
         reservation.id === parseInt(classId) && reservation.status !== 'cancelada'
       );
+      
       setHasReservation(hasReserved);
     } catch (error) {
       console.error('Error verificando reservas:', error);
-      // No mostramos error al usuario, solo registramos
     }
   };
 
+  // === FUNCIONES DE FORMATEO ===
+  
+  /**
+   * Formatea fecha para mostrar: "mié, 04 dic 2025"
+   * Usa formato corto para evitar textos largos que rompan el layout
+   */
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    // Usar formato corto para evitar textos muy largos que rompan el layout
     return date.toLocaleDateString('es-AR', {
       weekday: 'short',
       day: '2-digit',
@@ -68,11 +99,18 @@ const ClassDetailScreen = ({ route, navigation }) => {
     });
   };
 
+  /**
+   * Extrae HH:MM de un string de tiempo
+   * Input: "14:30:00" -> Output: "14:30"
+   */
   const formatTime = (timeString) => {
     const time = timeString.substring(0, 5); // HH:MM
     return time;
   };
 
+  /**
+   * Retorna emoji correspondiente a cada disciplina
+   */
   const getDisciplineIcon = (discipline) => {
     switch (discipline?.toLowerCase()) {
       case 'funcional': return '💪';
@@ -82,6 +120,9 @@ const ClassDetailScreen = ({ route, navigation }) => {
     }
   };
 
+  /**
+   * Retorna color de tema según disciplina (para header y botón de reservar)
+   */
   const getDisciplineColor = (discipline) => {
     switch (discipline?.toLowerCase()) {
       case 'funcional': return '#FF5722';
@@ -91,13 +132,18 @@ const ClassDetailScreen = ({ route, navigation }) => {
     }
   };
 
-const [showModal, setShowModal] = useState(false);
-const [reserving, setReserving] = useState(false);
-const [showSuccessModal, setShowSuccessModal] = useState(false);
-const [showErrorModal, setShowErrorModal] = useState(false);
-const [errorMessage, setErrorMessage] = useState('');
-const [errorTitle, setErrorTitle] = useState('Error');
+// === ESTADOS DE MODALES Y RESERVA ===
+const [showModal, setShowModal] = useState(false);           // Modal de confirmación de reserva
+const [reserving, setReserving] = useState(false);           // Indica si está procesando la reserva
+const [showSuccessModal, setShowSuccessModal] = useState(false);  // Modal de éxito
+const [showErrorModal, setShowErrorModal] = useState(false);      // Modal de error
+const [errorMessage, setErrorMessage] = useState('');        // Mensaje de error a mostrar
+const [errorTitle, setErrorTitle] = useState('Error');       // Título del modal de error
 
+/**
+ * Validación antes de mostrar modal de confirmación
+ * Verifica que haya cupo disponible
+ */
 const handleReserve = () => {
   if (classData.cupo <= 0) {
     setErrorTitle('⚠️ Sin cupo');
@@ -108,16 +154,33 @@ const handleReserve = () => {
   setShowModal(true);
 };
 
+/**
+ * Confirma y crea la reserva en el backend
+ * POST /reservations { class_id: X }
+ * 
+ * Validaciones del backend:
+ * - Reserva con mínimo 1 hora de anticipación
+ * - No superposición con otras reservas activas
+ * - Cupo disponible
+ * 
+ * Al éxito:
+ * - Actualizamos cupo local con el valor retornado
+ * - Marca hasReservation = true para actualizar UI
+ * - Muestra modal de éxito
+ */
 const confirmReservation = async () => {
   try {
     setReserving(true);
     const result = await createReservation(classData.id);
+    
+    // Actualizar cupo local con el valor retornado por el backend
     setClassData({ ...classData, cupo: result.cupo_restante });
-    setHasReservation(true); // Actualizar estado local
+    
+    setHasReservation(true);
+    
     setShowModal(false);
-    setShowSuccessModal(true); // Mostrar modal de éxito
+    setShowSuccessModal(true);
   } catch (error) {
-    // Mostrar mensaje claro; para 409 recibimos Error(message)
     const msg = error?.message || error?.error || 'No se pudo crear la reserva.';
     setErrorTitle('❌ Error');
     setErrorMessage(msg);
@@ -128,10 +191,20 @@ const confirmReservation = async () => {
 };
 
 
+  /**
+   * Abre la URL de Google Maps en la aplicación o navegador
+   * 
+   * Usa Linking.openURL() directamente sin validar con canOpenURL()
+   * porque en Android canOpenURL() requiere declarar schemes en AndroidManifest
+   * y es muy restrictivo.
+   * 
+   * Comportamiento:
+   * - Si tiene Google Maps instalado -> abre en la app
+   * - Si no -> abre en el navegador
+   */
   const handleShowLocation = async () => {
     const url = classData?.direccion;
     
-    // Debug: ver qué valor tiene
     console.log('🗺️ [ClassDetail] Intentando abrir URL:', url);
     
     if (!url) {
@@ -142,8 +215,6 @@ const confirmReservation = async () => {
     }
     
     try {
-      // Intentar abrir directamente sin validar primero
-      // porque canOpenURL en Android es muy restrictivo
       await Linking.openURL(url);
       console.log('🗺️ [ClassDetail] URL abierta exitosamente');
     } catch (e) {

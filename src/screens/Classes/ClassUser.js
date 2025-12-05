@@ -1,3 +1,15 @@
+/**
+ * ClassUser.js (Mis Reservas)
+ * 
+ * Pantalla que muestra todas las reservas del usuario con sus diferentes estados.
+ * Funcionalidades principales:
+ * - Listar reservas (confirmadas, canceladas, expiradas)
+ * - Cancelar reservas (hasta 2h antes)
+ * - Escanear QR para confirmar asistencia (30m antes - 30m después)
+ * - Manejo de notificaciones de reprogramación y cancelación
+ * - Navegación al detalle de cada clase
+ */
+
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
@@ -7,15 +19,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getMyReservations, cancelReservation } from '../../services/reservations';
 
 const ClassUser = ({ navigation, route }) => {
-  const [reservations, setReservations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [reservations, setReservations] = useState([]);        // Lista de reservas
+  const [loading, setLoading] = useState(true);                // Carga inicial
+  const [refreshing, setRefreshing] = useState(false);         // Pull-to-refresh
+  
+  // Modales de reprogramación (desde notificación)
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [rescheduleData, setRescheduleData] = useState(null);
+  
+  // Modales de cancelación por gimnasio (desde notificación)
   const [showCancelledModal, setShowCancelledModal] = useState(false);
   const [cancelledData, setCancelledData] = useState(null);
+  
+  // Modal de confirmación de cancelación por usuario
   const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
   const [cancelItem, setCancelItem] = useState(null);
+  
+  // Modales de feedback
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -25,9 +45,15 @@ const ClassUser = ({ navigation, route }) => {
 
   useEffect(() => {
     loadReservations();
-  }, []);
+  }, []); // cargamos una ves al montar la vista
 
-  // Manejar parámetros de notificación de reprogramación
+  /**
+   * EFFECT: Manejar parámetros de notificación de reprogramación
+   * 
+   * Cuando el usuario toca una notificación de "clase reprogramada",
+   * el sistema de notificaciones navega a esta pantalla con parámetros.
+   * Este effect detecta esos parámetros y muestra el modal correspondiente.
+   */
   useEffect(() => {
     if (route.params?.showRescheduleModal) {
       const {
@@ -60,9 +86,14 @@ const ClassUser = ({ navigation, route }) => {
       // Limpiar parámetros para evitar que se muestre nuevamente
       navigation.setParams({ showRescheduleModal: false });
     }
-  }, [route.params]);
+  }, [route.params]); // Se ejecuta cuando cambian los parámetros de ruta
 
-  // Manejar parámetros de notificación de cancelación
+  /**
+   * EFFECT: Manejar parámetros de notificación de cancelación
+   * 
+   * Similar al modal de reprogramación, pero para cuando el gimnasio cancela una clase.
+   * Muestra modal informativo con opción de buscar otra clase.
+   */
   useEffect(() => {
     if (route.params?.showCancelledModal) {
       const { className, sede, fecha, hora } = route.params;
@@ -78,51 +109,24 @@ const ClassUser = ({ navigation, route }) => {
       // Limpiar parámetros
       navigation.setParams({ showCancelledModal: false });
     }
-  }, [route.params]);
+  }, [route.params]); // Se ejecuta cuando cambian los parámetros de ruta
 
+  /**
+   * Carga todas las reservas del usuario desde el backend
+   * GET /reservations/me
+   * 
+   * Realiza dos procesamiento adicionales:
+   * 1. Marca como expiradas las clases donde pasó la ventana de QR sin confirmar (30min después de inicio + no escaneó QR)
+   * 2. Ordena por fecha ascendente (las más próximas primero)
+   */
   const loadReservations = async () => {
     try {
       setLoading(true);
       const data = await getMyReservations();
       
-      // Marcar como expiradas las clases donde pasó la ventana de QR sin confirmar asistencia
-      const now = new Date();
-      data.forEach(item => {
-        if (item.status === 'expirada' && item.attendance_status === 'not_attended') {
-          try {
-            const fechaClaseISO = item.fecha || item.class?.fecha;
-            const horaClase = item.hora || item.class?.hora;
-            
-            if (fechaClaseISO && horaClase) {
-              const fechaOnly = fechaClaseISO.split('T')[0];
-              const horaOnly = horaClase.substring(0, 5);
-              
-              const parts = fechaOnly.split('-');
-              const classDateTime = new Date(
-                parseInt(parts[0]),
-                parseInt(parts[1]) - 1,
-                parseInt(parts[2]),
-                parseInt(horaOnly.substring(0, 2)),
-                parseInt(horaOnly.substring(3, 5))
-              );
-              
-              // Ventana termina 30 min después de la clase
-              const thirtyMinAfter = new Date(classDateTime.getTime() + 30 * 60 * 1000);
-              
-              // Si ya pasaron los 30 min y no asistió, marcar como expirada
-              if (now > thirtyMinAfter) {
-                item.status = 'expirada';
-              }
-            }
-          } catch (err) {
-            console.error('Error validando expiración:', err);
-          }
-        }
-      });
-      
       // Orden: próximamente primero
       data.sort((a, b) => {
-        // Parsear como hora local: YYYY-MM-DD + T + HH:MM:SS
+        // Parsear como hora local: YYYY-MM-DD + HH:MM
         const partsA = a.fecha.split('-');
         const da = new Date(parseInt(partsA[0]), parseInt(partsA[1]) - 1, parseInt(partsA[2]), 
                             parseInt(a.hora.substring(0, 2)), parseInt(a.hora.substring(3, 5)));
@@ -133,6 +137,7 @@ const ClassUser = ({ navigation, route }) => {
         
         return da - db;
       });
+      
       setReservations(data);
     } catch (e) {
       setLoadErrorMessage(e.message || 'No se pudieron cargar tus reservas');
@@ -142,12 +147,25 @@ const ClassUser = ({ navigation, route }) => {
     }
   };
 
+  /**
+   * Maneja pull-to-refresh
+   * useCallback memoriza la función para evitar recrearla en cada render
+   */
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await loadReservations();
     setRefreshing(false);
   }, []);
-  
+
+    /**
+   * Determina si una reserva se puede cancelar
+   * 
+   * Regla de negocio: Solo se pueden cancelar clases confirmadas
+   * hasta 2 horas antes del inicio.
+   * 
+   * @param {Object} item - Reserva a validar
+   * @returns {boolean} true si se puede cancelar
+   */
   const isCancelable = (item) => {
     if (item.status !== 'confirmada') return false;
 
@@ -160,9 +178,7 @@ const ClassUser = ({ navigation, route }) => {
         return false;
         }
         
-        // Extraer solo la fecha (YYYY-MM-DD) del string ISO
         const fechaOnly = fechaClaseISO.split('T')[0];
-        // Extraer solo HH:MM del horaClase (por si viene con segundos)
         const horaOnly = horaClase.substring(0, 5);
         
         // Parsear como hora local sin conversión UTC
@@ -176,10 +192,8 @@ const ClassUser = ({ navigation, route }) => {
         );
         const now = new Date();
 
-        // Calcular el límite de cancelación: 2 horas antes de la clase
         const twoHoursBefore = new Date(classDateTime.getTime() - 2 * 60 * 60 * 1000);
 
-        // Se puede cancelar si ahora estamos ANTES del límite de 2 horas
         return now.getTime() < twoHoursBefore.getTime();
     } catch (err) {
         console.error('Error parseando fecha/hora:', err);
@@ -187,12 +201,21 @@ const ClassUser = ({ navigation, route }) => {
     }
   };
 
+  /**
+   * Determina si se puede escanear el QR para confirmar asistencia
+   * 
+   * Reglas de negocio:
+   * 1. Estado: Debe estar confirmada
+   * 2. Asistencia: No debe haber escaneado aún (attendance_status === 'pending')
+   * 3. Ventana de tiempo: 30 minutos antes hasta 30 minutos después del inicio
+   * 
+   * @param {Object} item - Reserva a validar
+   * @returns {boolean} true si puede escanear QR
+   */
   const canScanQR = (item) => {
-    // Puede escanear QR si:
-    // 1. Está confirmada
-    // 2. No ha escaneado aún (attendance_status === 'pending')
-    // 3. Está en la ventana de tiempo (30m antes hasta 30min después)
-    if (item.status !== 'confirmada' || item.attendance_status !== 'pending') return false;
+    if (item.status !== 'confirmada' || item.attendance_status !== 'pending') {
+      return false;
+    }
 
     try {
       const fechaClaseISO = item.fecha || item.class?.fecha;
@@ -214,7 +237,6 @@ const ClassUser = ({ navigation, route }) => {
       );
       const now = new Date();
 
-      // Ventana: desde 30m antes hasta 30 min después
       const thirtyMinBefore = new Date(classDateTime.getTime() - 30 * 60 * 1000);
       const thirtyMinAfter = new Date(classDateTime.getTime() + 30 * 60 * 1000);
 
@@ -225,6 +247,9 @@ const ClassUser = ({ navigation, route }) => {
     }
   };
 
+  /**
+   * Navega a la pantalla de escaneo QR con los datos de la reserva
+   */
   const handleScanQR = (item) => {
     navigation.navigate('QRScanner', {
       reservationData: {
@@ -234,11 +259,21 @@ const ClassUser = ({ navigation, route }) => {
       }
     });
   };
+  
+  /**
+   * Muestra modal de confirmación antes de cancelar
+   */
   const handleCancel = (item) => {
     setCancelItem(item);
     setShowCancelConfirmModal(true);
   };
 
+  /**
+   * Confirma y ejecuta la cancelación de reserva
+   * DELETE /reservations/:id
+   * 
+   * Al cancelar, la reserva cambia a status = 'cancelada' pero permanece en la lista como registro histórico
+   */
   const confirmCancel = async () => {
     if (!cancelItem) return;
     
@@ -256,7 +291,11 @@ const ClassUser = ({ navigation, route }) => {
     }
   };
 
-  // Manejar aceptar reprogramación (mantener reserva)
+  /**
+   * Usuario acepta la reprogramación
+   * La reserva se mantiene con el nuevo horario automáticamente
+   * (el backend ya actualizó la reserva)
+   */
   const handleAcceptReschedule = () => {
     setShowRescheduleModal(false);
     setSuccessMessage('Tu reserva se actualizó con el nuevo horario');
@@ -264,7 +303,11 @@ const ClassUser = ({ navigation, route }) => {
     onRefresh();
   };
 
-  // Manejar cancelar reprogramación (eliminar reserva)
+  /**
+   * Usuario rechaza la reprogramación
+   * Cancela la reserva porque el nuevo horario no le conviene
+   * DELETE /reservations/:id
+   */
   const handleCancelReschedule = async () => {
     if (!rescheduleData?.reservationId) {
       setShowRescheduleModal(false);
@@ -284,12 +327,24 @@ const ClassUser = ({ navigation, route }) => {
     }
   };
 
+  // === FUNCIONES DE FORMATEO ===
+  
+  /**
+   * Formatea fecha: "mié, 4 dic"
+   */
   const formatDate = (dateStr) => {
     const d = new Date(dateStr);
     return d.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' });
   };
+  
+  /**
+   * Extrae HH:MM de un string de tiempo
+   */
   const formatTime = (timeStr) => timeStr?.substring(0, 5);
 
+  /**
+   * Retorna emoji según disciplina
+   */
   const getDisciplineIcon = (discipline) => {
     switch ((discipline || '').toLowerCase()) {
       case 'funcional': return '💪';
